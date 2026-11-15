@@ -180,8 +180,8 @@ footer{border-top:1px solid var(--line);padding-block:24px 40px;font-size:13px;c
   <div class="inner">
     <div class="hero-text">
       <span class="stamp">도면 번호 WEB-001 · 비개발자용</span>
-      <h1>회사 홈페이지는 어떻게 만들어질까요?</h1>
-      <p class="lead">홈페이지는 한 채의 건물과 같습니다. 땅 위에 뼈대를 세우고, 인테리어를 하고, 전기를 넣고, 주소판을 답니다. 그림과 비유로 홈페이지의 구조와 만드는 과정을 풀어 봤습니다.</p>
+      <h1 id="hero-title">회사 홈페이지는 어떻게 만들어질까요?</h1>
+      <p class="lead" id="hero-lead">홈페이지는 한 채의 건물과 같습니다. 땅 위에 뼈대를 세우고, 인테리어를 하고, 전기를 넣고, 주소판을 답니다. 그림과 비유로 홈페이지의 구조와 만드는 과정을 풀어 봤습니다.</p>
       <nav aria-label="목차">
         <a href="#building">건물로 보는 구조</a>
         <a href="#flow">접속하면 생기는 일</a>
@@ -488,7 +488,7 @@ footer{border-top:1px solid var(--line);padding-block:24px 40px;font-size:13px;c
     </div>
     <figcaption>디자인 마지막 주와 개발 첫 주는 겹쳐서 진행하는 경우가 많습니다. 오픈 뒤에는 운영·유지보수가 계속됩니다.</figcaption>
   </figure>
-  <ol class="steps">
+  <ol class="steps" id="steps">
     <li><h3>기획</h3><span class="who">참여: 회사 담당자, 기획자</span>
       <p>누구에게 무엇을 보여 줄지 정하고, 메뉴 구성과 페이지별 내용을 정리합니다.</p>
       <span class="out"><b>결과물</b> 사이트맵, 와이어프레임</span></li>
@@ -563,7 +563,7 @@ footer{border-top:1px solid var(--line);padding-block:24px 40px;font-size:13px;c
   <div class="glossary">
     <table>
       <thead><tr><th>용어</th><th>쉬운 뜻</th></tr></thead>
-      <tbody>
+      <tbody id="gloss">
         <tr><td>반응형</td><td>PC, 태블릿, 휴대폰 화면 크기에 맞춰 배치가 자동으로 바뀌는 것</td></tr>
         <tr><td>퍼블리싱</td><td>디자인 시안을 HTML·CSS로 옮겨 실제 화면으로 만드는 작업</td></tr>
         <tr><td>와이어프레임</td><td>색 없이 상자와 선으로 그린 페이지 배치도</td></tr>
@@ -583,7 +583,7 @@ footer{border-top:1px solid var(--line);padding-block:24px 40px;font-size:13px;c
     <span class="eyebrow">7 · 자주 묻는 질문</span>
     <h2>이럴 땐 어떻게 하나요?</h2>
   </div>
-  <div class="faq">
+  <div class="faq" id="faq-list">
     <details><summary>문구 하나 바꾸는데 왜 개발자에게 요청해야 하나요?</summary>
       <p>관리자 페이지(CMS)가 없는 홈페이지는 글자가 코드 안에 직접 들어 있기 때문입니다. 자주 바뀌는 부분(공지, 채용, 포트폴리오)은 처음 만들 때 관리자 페이지에서 직접 고칠 수 있게 요청하면 좋습니다.</p></details>
     <details><summary>고쳤다는데 제 화면에서는 그대로예요.</summary>
@@ -633,6 +633,23 @@ groups.forEach(g => {
 $("prev").addEventListener("click", () => show(cur - 1));
 $("next").addEventListener("click", () => show(cur + 1));
 show(cur);
+
+/* 관리자 페이지(admin.html)에서 고친 내용(content.json)을 불러와 반영. 불러오지 못하면 위의 기본 내용을 그대로 보여 줌 */
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function applyContent(c){
+  if (c.hero) { if (c.hero.title) $("hero-title").textContent = c.hero.title; if (c.hero.lead) $("hero-lead").textContent = c.hero.lead; }
+  if (Array.isArray(c.floors)) {
+    c.floors.forEach((f, i) => { if (FLOORS[i]) { if (f.desc) FLOORS[i].d = f.desc; if (f.ex) FLOORS[i].ex = f.ex; } });
+    show(cur);
+  }
+  if (Array.isArray(c.steps) && c.steps.length) $("steps").innerHTML = c.steps.map(s =>
+    `<li><h3>${esc(s.title)}</h3><span class="who">참여: ${esc(s.who)}</span><p>${esc(s.desc)}</p><span class="out"><b>결과물</b> ${esc(s.output)}</span></li>`).join("");
+  if (Array.isArray(c.glossary) && c.glossary.length) $("gloss").innerHTML = c.glossary.map(g =>
+    `<tr><td>${esc(g.term)}</td><td>${esc(g.meaning)}</td></tr>`).join("");
+  if (Array.isArray(c.faq) && c.faq.length) $("faq-list").innerHTML = c.faq.map(f =>
+    `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("");
+}
+fetch("content.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(applyContent).catch(() => {});
 </script>
 </body>
 </html>
