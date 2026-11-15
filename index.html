@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>홈페이지 구조 안내서</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 설계도(blueprint) 느낌의 단일 칼럼 안내서, 섹션마다 도식 하나 */
+:root{
+  --bg:#F5F7FA; --surface:#FFFFFF; --fg:#18212E; --muted:#556275; --line:#D8DFE8;
+  --accent:#1F5FBF; --accent-soft:#E4EDFA; --warm:#B86A0B; --warm-soft:#FBF0E1;
+  --display:"IBM Plex Sans KR","Noto Sans KR",system-ui,sans-serif;
+  --body:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1520; --surface:#172030; --fg:#E6ECF4; --muted:#9AA8BA; --line:#2A3648;
+  --accent:#6FA3F0; --accent-soft:#1C2C46; --warm:#E9A64C; --warm-soft:#33261A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1520; --surface:#172030; --fg:#E6ECF4; --muted:#9AA8BA; --line:#2A3648;
+  --accent:#6FA3F0; --accent-soft:#1C2C46; --warm:#E9A64C; --warm-soft:#33261A; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.75;
+  word-break:keep-all;overflow-wrap:break-word}
+.wrap{max-width:860px;margin:0 auto;padding-block:48px 80px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:64px}
+h1,h2,h3{font-family:var(--display);line-height:1.35;text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,5vw,40px);font-weight:700}
+h2{font-size:clamp(22px,3.4vw,28px);font-weight:700}
+h3{font-size:18px;font-weight:700}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:18px;color:var(--muted);max-width:62ch}
+section{display:flex;flex-direction:column;gap:20px}
+section > p{max-width:65ch}
+.term{font-family:var(--mono);font-size:.85em;background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;white-space:nowrap}
+
+header{display:flex;flex-direction:column;gap:16px;border-bottom:1px solid var(--line);padding-bottom:32px}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+nav a{font-size:14px;color:var(--fg);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px;background:var(--surface)}
+nav a:hover,nav a:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+
+/* 건물 도식 */
+.building{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:24px;align-items:start}
+.floors{display:flex;flex-direction:column;gap:4px}
+.floor{all:unset;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:10px 14px;border:1px solid var(--line);background:var(--surface);border-radius:6px;font-size:15px;font-weight:500}
+.floor small{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.floor:hover{border-color:var(--accent)}
+.floor:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.floor[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.floor[aria-selected="true"] small{color:var(--bg);opacity:.8}
+.floor.ground{border-bottom-width:4px}
+.detail{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.detail .tag{align-self:flex-start}
+.detail .ex{font-size:14px;color:var(--muted);border-top:1px dashed var(--line);padding-top:12px}
+
+/* 요청 흐름 */
+.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;counter-reset:f}
+.flow li{list-style:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 14px;display:flex;flex-direction:column;gap:6px;position:relative;min-width:0}
+.flow li::before{counter-increment:f;content:counter(f);font-family:var(--mono);font-size:12px;width:24px;height:24px;border-radius:50%;
+  display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.flow b{font-family:var(--display);font-size:15px}
+.flow span{font-size:14px;color:var(--muted);line-height:1.6}
+.flow{padding:0;margin:0}
+.note{font-size:14px;color:var(--muted)}
+
+/* 앞/뒤 비교 */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.side{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.side h3 small{display:block;font-family:var(--body);font-weight:400;font-size:14px;color:var(--muted)}
+.side ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}
+.side li{display:flex;flex-direction:column;gap:2px;font-size:15px}
+.side li b{font-weight:700}
+.side li span{color:var(--muted);font-size:14px}
+.infra{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.infra div{border-top:3px solid var(--warm);background:var(--surface);padding:14px;border-radius:0 0 8px 8px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.infra b{font-family:var(--display)}
+.infra span{font-size:14px;color:var(--muted);line-height:1.6}
+
+/* 진행 단계 */
+.steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;border-left:2px solid var(--line);margin-left:10px}
+.steps li{position:relative;padding:0 0 26px 26px;display:flex;flex-direction:column;gap:4px}
+.steps li::before{content:"";position:absolute;left:-8px;top:8px;width:14px;height:14px;border-radius:50%;background:var(--bg);border:3px solid var(--accent)}
+.steps li:last-child{padding-bottom:0}
+.steps .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted)}
+.steps .meta em{font-style:normal;font-family:var(--mono);color:var(--warm)}
+.steps p{font-size:15px}
+
+/* GitHub */
+.git{background:var(--warm-soft);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.git dl{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:10px 18px}
+.git dt{font-weight:700}
+.git dd{margin:0;color:var(--fg)}
+.git dd span{color:var(--muted)}
+
+/* 용어 */
+.glossary{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;color:var(--muted);font-weight:500;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td:first-child{white-space:nowrap;font-weight:700}
+
+/* FAQ */
+details{border-bottom:1px solid var(--line);padding:14px 0}
+summary{cursor:pointer;font-weight:700;font-size:16px}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+details p{margin-top:10px;color:var(--muted);font-size:15px;max-width:65ch}
+
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:20px}
+
+@media (max-width:720px){
+  .building,.split{grid-template-columns:1fr}
+  .flow{grid-template-columns:1fr}
+  .infra{grid-template-columns:1fr 1fr}
+  .git dl{grid-template-columns:1fr;gap:2px}
+  .git dd{margin-bottom:10px}
+}
+@media (max-width:420px){.infra{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.floor{transition:background .15s,border-color .15s}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">비개발자를 위한 안내서</span>
+  <h1>회사 홈페이지는 어떻게 만들어질까요?</h1>
+  <p class="lead">홈페이지를 하나의 건물이라고 생각하면 쉽습니다. 땅이 있고, 주소가 있고, 뼈대와 인테리어가 있고, 보이지 않는 곳에 관리실이 있죠. 이 페이지는 개발 용어를 몰라도 홈페이지의 구조와 만드는 과정을 이해할 수 있도록 정리했습니다.</p>
+  <nav aria-label="목차">
+    <a href="#building">건물로 보는 구조</a>
+    <a href="#flow">접속하면 생기는 일</a>
+    <a href="#parts">앞단과 뒷단</a>
+    <a href="#process">만드는 과정</a>
+    <a href="#github">GitHub의 역할</a>
+    <a href="#glossary">용어 사전</a>
+    <a href="#faq">자주 묻는 질문</a>
+  </nav>
+</header>
+
+<section id="building">
+  <span class="eyebrow">1 · 한눈에 보기</span>
+  <h2>홈페이지는 한 채의 건물입니다</h2>
+  <p>아래 층을 하나씩 눌러 보세요. 맨 아래 땅부터 위로 올라가며 쌓입니다.</p>
+  <div class="building">
+    <div class="floors" role="tablist" aria-label="홈페이지 구성 층" id="floors"></div>
+    <div class="detail" role="tabpanel" id="detail" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="flow">
+  <span class="eyebrow">2 · 접속 순간</span>
+  <h2>주소를 입력하면 1초 안에 일어나는 일</h2>
+  <p>고객이 휴대폰에서 우리 홈페이지 주소를 입력하면, 화면이 뜨기까지 다음 순서로 일이 진행됩니다.</p>
+  <ol class="flow">
+    <li><b>주소 입력</b><span>고객이 브라우저(크롬, 사파리 등)에 <span class="term">company.com</span>을 입력합니다.</span></li>
+    <li><b>주소 찾기</b><span><span class="term">DNS</span>라는 인터넷 전화번호부가 "이 주소의 건물은 어디 있지?"를 찾아 줍니다.</span></li>
+    <li><b>서버에 요청</b><span>찾은 위치의 컴퓨터(서버)에 "첫 화면 보내 주세요" 하고 요청합니다.</span></li>
+    <li><b>파일 전달</b><span>서버가 글, 사진, 디자인 파일을 묶어서 보냅니다. 자물쇠(<span class="term">HTTPS</span>)로 잠가서 안전하게 보냅니다.</span></li>
+    <li><b>화면 완성</b><span>브라우저가 받은 파일을 조립해 고객 화면에 홈페이지를 그려 줍니다.</span></li>
+  </ol>
+  <p class="note">택배에 비유하면: 주소를 적고 → 물류센터가 위치를 찾고 → 창고에 주문하고 → 포장해서 배송하고 → 고객이 상자를 열어 조립하는 과정입니다.</p>
+</section>
+
+<section id="parts">
+  <span class="eyebrow">3 · 구성 부품</span>
+  <h2>보이는 앞단, 보이지 않는 뒷단</h2>
+  <p>개발자들은 홈페이지를 크게 두 부분으로 나눠서 말합니다. 식당으로 치면 손님이 앉는 홀과 손님이 보지 못하는 주방입니다.</p>
+  <div class="split">
+    <div class="side">
+      <h3>프론트엔드 <small>손님이 보는 홀 · 화면에 보이는 모든 것</small></h3>
+      <ul>
+        <li><b>HTML: 뼈대</b><span>제목, 문단, 사진, 버튼이 어디에 있는지 정합니다.</span></li>
+        <li><b>CSS: 인테리어</b><span>색상, 글꼴, 간격, 모바일에서의 배치를 정합니다.</span></li>
+        <li><b>JavaScript: 움직임</b><span>메뉴 열기, 슬라이드 넘기기, 입력값 확인처럼 반응하는 동작을 담당합니다.</span></li>
+      </ul>
+    </div>
+    <div class="side">
+      <h3>백엔드 <small>주방 · 화면 뒤에서 일을 처리하는 곳</small></h3>
+      <ul>
+        <li><b>서버 프로그램: 요리사</b><span>문의하기 양식을 받아 담당자에게 메일로 보내는 등 실제 처리를 합니다.</span></li>
+        <li><b>데이터베이스: 창고</b><span>공지사항, 채용 공고, 문의 내역 같은 정보를 보관합니다.</span></li>
+        <li><b>관리자 페이지(CMS): 주문판</b><span>개발자 없이도 담당자가 글과 사진을 직접 고칠 수 있는 화면입니다.</span></li>
+      </ul>
+    </div>
+  </div>
+  <h3>건물을 받쳐 주는 기반 시설</h3>
+  <div class="infra">
+    <div><b>도메인</b><span>건물 주소. <span class="term">company.com</span> 같은 이름을 1년 단위로 빌립니다.</span></div>
+    <div><b>호스팅</b><span>건물이 서 있는 땅. 24시간 켜져 있는 컴퓨터를 월 단위로 빌립니다.</span></div>
+    <div><b>SSL 인증서</b><span>현관 자물쇠. 주소창의 자물쇠 표시로, 주고받는 정보를 암호화합니다.</span></div>
+    <div><b>CDN</b><span>전국 지점. 사진 같은 파일을 가까운 곳에 복사해 두어 더 빨리 뜨게 합니다.</span></div>
+  </div>
+  <p class="note">회사 소개 위주의 홈페이지는 백엔드 없이 프론트엔드만으로 만들기도 합니다. 문의 양식이나 게시판처럼 정보를 저장해야 할 때 백엔드가 필요합니다.</p>
+</section>
+
+<section id="process">
+  <span class="eyebrow">4 · 진행 순서</span>
+  <h2>홈페이지가 만들어지는 6단계</h2>
+  <p>기간은 소개용 회사 홈페이지(10~20쪽 규모)를 기준으로 한 일반적인 예시입니다. 규모와 기능에 따라 달라집니다.</p>
+  <ol class="steps">
+    <li><h3>기획</h3><div class="meta"><span>참여: 회사 담당자, 기획자</span><em>1~2주</em></div>
+      <p>누구에게 무엇을 보여 줄지 정합니다. 메뉴 구성표(사이트맵)와 페이지별 내용 배치도(와이어프레임)가 결과물입니다.</p></li>
+    <li><h3>디자인</h3><div class="meta"><span>참여: 디자이너</span><em>2~3주</em></div>
+      <p>회사 로고와 색상에 맞춰 실제 화면 시안을 만듭니다. PC와 모바일 화면을 각각 디자인하고 회사가 확인합니다.</p></li>
+    <li><h3>개발</h3><div class="meta"><span>참여: 프론트엔드·백엔드 개발자</span><em>3~6주</em></div>
+      <p>디자인 시안을 실제로 작동하는 코드로 옮깁니다. 이 단계의 코드는 GitHub에 매일 저장됩니다.</p></li>
+    <li><h3>테스트</h3><div class="meta"><span>참여: 전원</span><em>1주</em></div>
+      <p>여러 휴대폰과 브라우저에서 깨지는 곳이 없는지, 오타와 링크 오류가 없는지, 문의 양식이 잘 가는지 확인합니다.</p></li>
+    <li><h3>오픈(배포)</h3><div class="meta"><span>참여: 개발자</span><em>하루</em></div>
+      <p>완성된 파일을 호스팅 서버에 올리고 도메인을 연결합니다. 이때부터 누구나 접속할 수 있습니다.</p></li>
+    <li><h3>운영·유지보수</h3><div class="meta"><span>참여: 회사 담당자, 개발자</span><em>계속</em></div>
+      <p>소식과 사진을 갱신하고, 보안 업데이트와 오류 수정을 이어 갑니다. 홈페이지는 만든 뒤에도 관리가 필요합니다.</p></li>
+  </ol>
+</section>
+
+<section id="github">
+  <span class="eyebrow">5 · 코드 보관소</span>
+  <h2>GitHub는 왜 쓰나요?</h2>
+  <p>GitHub는 홈페이지 코드를 보관하는 온라인 금고입니다. 여러 사람이 동시에 작업해도 서로 덮어쓰지 않게 해 주고, 모든 수정 내역을 기록으로 남깁니다. 문서의 "버전 기록" 기능을 아주 정교하게 만든 것이라고 생각하면 됩니다.</p>
+  <div class="git">
+    <dl>
+      <dt>저장소 (Repository)</dt><dd>프로젝트 하나의 금고. <span>홈페이지 코드 전체가 여기 들어 있습니다.</span></dd>
+      <dt>커밋 (Commit)</dt><dd>저장 버튼을 누른 기록. <span>누가, 언제, 무엇을 바꿨는지 메모와 함께 남습니다.</span></dd>
+      <dt>브랜치 (Branch)</dt><dd>원본을 건드리지 않는 연습장. <span>새 기능을 따로 만들어 보고, 괜찮으면 합칩니다.</span></dd>
+      <dt>풀 리퀘스트 (PR)</dt><dd>"이렇게 바꿔도 될까요?" 하는 검토 요청서. <span>다른 사람이 확인하고 승인하면 원본에 반영됩니다.</span></dd>
+      <dt>배포 (Deploy)</dt><dd>승인된 코드를 실제 홈페이지에 올리는 일. <span>자동으로 설정해 두면 승인과 동시에 홈페이지가 바뀝니다.</span></dd>
+    </dl>
+    <p class="note">잘못 바꿔도 이전 기록으로 언제든 되돌릴 수 있습니다. 그래서 GitHub를 쓰면 실수가 두렵지 않습니다.</p>
+  </div>
+</section>
+
+<section id="glossary">
+  <span class="eyebrow">6 · 용어 사전</span>
+  <h2>회의에서 자주 듣는 말</h2>
+  <div class="glossary">
+    <table>
+      <thead><tr><th>용어</th><th>쉬운 뜻</th></tr></thead>
+      <tbody>
+        <tr><td>반응형</td><td>PC, 태블릿, 휴대폰 화면 크기에 맞춰 배치가 자동으로 바뀌는 것</td></tr>
+        <tr><td>퍼블리싱</td><td>디자인 시안을 HTML·CSS로 옮겨 실제 화면으로 만드는 작업</td></tr>
+        <tr><td>와이어프레임</td><td>색 없이 상자와 선으로 그린 페이지 배치도</td></tr>
+        <tr><td>스테이징</td><td>오픈 전에 회사만 볼 수 있는 미리보기 홈페이지</td></tr>
+        <tr><td>SEO</td><td>검색 엔진(네이버, 구글)에서 우리 홈페이지가 잘 찾아지도록 다듬는 일</td></tr>
+        <tr><td>API</td><td>다른 서비스와 정보를 주고받는 창구. 지도, 결제, 예약 기능 연결에 씁니다</td></tr>
+        <tr><td>캐시</td><td>한 번 받은 파일을 기억해 두는 것. 수정했는데 그대로 보이면 대개 캐시 때문입니다</td></tr>
+        <tr><td>404</td><td>"찾는 페이지가 없습니다"라는 뜻의 오류 번호</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="faq">
+  <span class="eyebrow">7 · 자주 묻는 질문</span>
+  <h2>이럴 땐 어떻게 하나요?</h2>
+  <div>
+    <details><summary>문구 하나 바꾸는데 왜 개발자에게 요청해야 하나요?</summary>
+      <p>관리자 페이지(CMS)가 없는 홈페이지는 글자가 코드 안에 직접 들어 있기 때문입니다. 자주 바뀌는 부분(공지, 채용, 포트폴리오)은 처음 만들 때 관리자 페이지에서 직접 고칠 수 있게 요청하면 좋습니다.</p></details>
+    <details><summary>고쳤다는데 제 화면에서는 그대로예요.</summary>
+      <p>브라우저가 예전 파일을 기억(캐시)하고 있을 가능성이 큽니다. 새로고침을 하거나, 시크릿 창에서 다시 열어 보세요.</p></details>
+    <details><summary>오픈한 뒤에도 매달 비용이 드나요?</summary>
+      <p>네. 도메인은 매년, 호스팅은 매달 비용이 나갑니다. 여기에 오류 수정과 보안 업데이트를 맡길 유지보수 계약이 더해지는 경우가 많습니다. 소개용 홈페이지는 호스팅 비용이 거의 들지 않는 방식도 있습니다.</p></details>
+    <details><summary>홈페이지의 주인은 누구인가요?</summary>
+      <p>도메인, 호스팅, GitHub 저장소 계정이 회사 명의로 되어 있는지 꼭 확인하세요. 외주 업체 명의로 되어 있으면 업체를 바꿀 때 홈페이지를 옮기기 어려울 수 있습니다.</p></details>
+    <details><summary>홈페이지가 안 열려요. 누구에게 연락해야 하나요?</summary>
+      <p>주소 자체가 안 열리면 도메인이나 호스팅 문제일 수 있으니 관리 업체나 개발 담당자에게 알리세요. 일부 페이지만 이상하면 개발 담당자에게 화면 캡처와 접속한 주소를 함께 보내면 빠르게 처리됩니다.</p></details>
+  </div>
+</section>
+
+<footer>이 안내서는 일반적인 회사 홈페이지 구조를 기준으로 작성했습니다. 실제 구성은 프로젝트마다 다를 수 있습니다.</footer>
+</div>
+
+<script>
+const FLOORS = [
+  {k:"운영", n:"관리실", tag:"CMS · 관리자 페이지", d:"건물 관리실처럼, 담당자가 공지사항이나 사진을 직접 올리고 고치는 화면입니다. 코드를 몰라도 글쓰기만 할 줄 알면 됩니다.", ex:"예) 채용 공고를 새로 올리기, 메인 배너 사진 바꾸기"},
+  {k:"동작", n:"전기·엘리베이터", tag:"JavaScript", d:"버튼을 누르면 메뉴가 열리고, 사진이 넘어가는 것처럼 화면이 반응하게 만드는 부분입니다.", ex:"예) 모바일 메뉴 열고 닫기, 문의 양식에 이메일을 잘못 쓰면 알려 주기"},
+  {k:"외관", n:"인테리어", tag:"CSS", d:"같은 뼈대라도 벽지와 가구에 따라 분위기가 달라지듯, 색상·글꼴·간격·배치를 정합니다. 휴대폰에서 화면이 알맞게 바뀌는 것도 여기서 정합니다.", ex:"예) 회사 대표 색상 적용, 휴대폰에서 메뉴를 한 줄로 쌓기"},
+  {k:"구조", n:"뼈대", tag:"HTML", d:"기둥과 벽처럼 무엇이 어디에 있는지 정합니다. 제목, 문단, 사진, 버튼 같은 내용물의 자리를 잡는 기본 설계입니다.", ex:"예) 맨 위에 로고, 그 아래 회사 소개 문단, 맨 아래 연락처"},
+  {k:"저장", n:"창고", tag:"데이터베이스", d:"공지사항, 문의 내역 같은 정보를 차곡차곡 보관하는 곳입니다. 필요할 때 꺼내서 화면에 보여 줍니다.", ex:"예) 고객이 남긴 문의 100건을 날짜순으로 보관"},
+  {k:"주소", n:"주소판", tag:"도메인", d:"건물에 주소가 있어야 찾아올 수 있듯, 홈페이지에도 company.com 같은 주소가 필요합니다. 보통 1년 단위로 빌려서 갱신합니다.", ex:"예) 갱신을 놓치면 주소가 끊겨 홈페이지가 안 열릴 수 있습니다"},
+  {k:"기반", n:"땅", tag:"호스팅 · 서버", d:"건물이 서 있을 땅입니다. 24시간 꺼지지 않는 컴퓨터(서버)를 빌려서 홈페이지 파일을 올려 둡니다.", ex:"예) AWS, 카페24, Vercel 같은 업체에서 빌립니다"}
+];
+const floorsEl = document.getElementById("floors"), detailEl = document.getElementById("detail");
+function show(i){
+  [...floorsEl.children].forEach((b,j)=>b.setAttribute("aria-selected", j===i));
+  const f = FLOORS[i];
+  detailEl.innerHTML = `<span class="term tag">${f.tag}</span><h3>${f.n}</h3><p>${f.d}</p><p class="ex">${f.ex}</p>`;
+}
+FLOORS.forEach((f,i)=>{
+  const b = document.createElement("button");
+  b.className = "floor" + (i===FLOORS.length-1 ? " ground" : "");
+  b.setAttribute("role","tab"); b.id = "floor-"+i;
+  b.innerHTML = `<span>${f.n}</span><small>${f.tag.split(" · ")[0]}</small>`;
+  b.addEventListener("click",()=>show(i));
+  b.addEventListener("keydown",e=>{
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();
+      const n=(i+(e.key==="ArrowDown"?1:-1)+FLOORS.length)%FLOORS.length; floorsEl.children[n].focus(); show(n);}
+  });
+  floorsEl.appendChild(b);
+});
+show(FLOORS.length-1);
+</script>
+</body>
+</html>
