@@ -1,7 +1,7 @@
 <title>철기 공성전</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Serif+KR:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
 /* Layout: 전장 캔버스가 화면 전체, HUD는 네 모서리에 고정. 메뉴는 전장 위에 뜨는 양피지 군령서 */
 :root{
@@ -140,14 +140,14 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
       <div class="meta"><span>영웅 체력</span><span class="num" id="hHpTxt">0</span></div>
     </div>
     <div class="card war">
-      <div class="side blue"><b class="num" id="hBlue">0</b><small>청군</small></div>
+      <div class="side blue"><b class="num" id="hBlue">0</b><small>고구려</small></div>
       <div class="castles">
         <label><span>우리 성</span><span class="num" id="hPCt"></span></label>
         <div class="bar sm blue"><i id="hPC"></i></div>
         <label><span>적의 성</span><span class="num" id="hECt"></span></label>
         <div class="bar sm red"><i id="hEC"></i></div>
       </div>
-      <div class="side red"><b class="num" id="hRed">0</b><small>적군</small></div>
+      <div class="side red"><b class="num" id="hRed">0</b><small id="hRedName">백제</small></div>
     </div>
     <div class="right">
       <div class="card gold num" id="hGold">0</div>
@@ -172,7 +172,7 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
   <div class="sheet">
     <div class="seal">군령</div>
     <h1>철기 공성전</h1>
-    <p class="lede">당신은 청군의 장수입니다. 성에서 병사가 끊임없이 나오고, 병사들은 알아서 거점을 향해 몰려갑니다. 하지만 장수 곁에 있는 병사는 당신을 따라 움직이고 사기가 올라 더 세게 싸웁니다. 병력을 모아 거점을 빼앗고 적의 성을 무너뜨리세요. 장이 넘어갈수록 적은 강해집니다.</p>
+    <p class="lede">삼국이 다투던 시절, 당신은 고구려의 장수입니다. 백제와 신라가 번갈아 국경을 넘어옵니다. 성에서 병사가 끊임없이 나오고, 병사들은 알아서 거점을 향해 몰려갑니다. 하지만 장수 곁에 있는 병사는 당신을 따라 움직이고 사기가 올라 더 세게 싸웁니다. 병력을 모아 거점을 빼앗고 적의 성을 무너뜨리세요. 장이 넘어갈수록 적은 강해집니다.</p>
     <div class="controls" id="ctrlList">
       <div><kbd>WASD·방향키</kbd> 이동</div>
       <div><kbd>Space·클릭</kbd> 칼 베기 (마우스 방향)</div>
@@ -263,7 +263,14 @@ const UPGRADES = [
 ];
 
 const STAGE_NAMES = ['국경 초소', '갈대 평원', '붉은 고개', '늑대 숲', '강철 요새', '잿빛 협곡', '왕의 들판', '마지막 성벽'];
-const GENERAL_NAMES = ['적장 흑풍', '적장 철갑', '적장 독사', '적장 망치', '적장 서리', '적장 혈랑'];
+const GENERAL_NAMES = ['진무', '해루', '사오', '목간', '흑궁', '설한'];
+const PLAYER_FACTION = { name: '고구려', mark: '高' };
+const ENEMY_FACTIONS = [{ name: '백제', mark: '百' }, { name: '신라', mark: '新' }];
+function enemyFaction(s) { return ENEMY_FACTIONS[(s - 1) % 2]; }
+const PAL = [
+  { armor: '#2f5fae', armorD: '#183766', trim: '#d9b25a', plume: '#c8322a', helm: '#9aa3ad', helmD: '#59616b', cloth: '#26303c' },
+  { armor: '#b23a2e', armorD: '#5e1710', trim: '#2b1c14', plume: '#f2e6c8', helm: '#7a756d', helmD: '#45413b', cloth: '#3a2a20' },
+];
 function stageName(s) { return `${s}장 · ${STAGE_NAMES[s - 1] || '끝없는 전장'}`; }
 
 /* ---------------- Balance ---------------- */
@@ -434,6 +441,7 @@ function newBattle(stage) {
   }
   if (d.general) spawnGeneral();
   G.cam.x = G.hero.x; G.cam.y = G.hero.y;
+  const rn = document.getElementById('hRedName'); if (rn) rn.textContent = enemyFaction(stage).name;
   buildGround(rng);
   buildGrid();
 
@@ -450,7 +458,7 @@ function newBattle(stage) {
       [30, '적의 성을 무너뜨리면 승리. 우리 성이 무너지면 패배입니다'],
     ];
   } else G.tips = [];
-  showBanner(stageName(stage), stage >= 3 ? `${G.general ? G.general.name + '이(가) 적군을 이끕니다' : ''}` : '적의 성을 무너뜨려라', 3);
+  showBanner(stageName(stage), stage >= 3 ? `${G.general ? G.general.name + '이(가) 적군을 이끕니다' : ''}` : `${enemyFaction(stage).name}의 성을 무너뜨려라`, 3);
 }
 
 function addStruct(s) { s.flash = 0; s.shootCd = s.shootCd || 0; G.structs.push(s); return s; }
@@ -481,7 +489,7 @@ function makeHero(x, y) {
 function spawnGeneral() {
   const s = G.stage, m = G.d.eMult;
   const g = {
-    id: G.nid++, team: 1, type: 'general', hero: true, general: true, name: GENERAL_NAMES[(s - 3) % GENERAL_NAMES.length],
+    id: G.nid++, team: 1, type: 'general', hero: true, general: true, name: `${enemyFaction(s).name} 장수 ${GENERAL_NAMES[(s - 3) % GENERAL_NAMES.length]}`,
     x: G.ec.x - 120, y: G.ec.y, vx: 0, vy: 0, r: 14, hp: 420 + 150 * s, maxHp: 420 + 150 * s, atk: 20 * m, reach: 42,
     cd: 0, cdMax: 0.75, spd: 108, face: Math.PI, swing: 0, swingDir: 1, alive: true, retarget: 0, target: null, goal: null,
     hitFlash: 0, rage: 0, stun: 0, retreat: false, aggro: 250, following: false
@@ -902,7 +910,7 @@ function killUnit(u, src) {
     }
   } else {
     if (u === G.hero) {
-      G.deaths++; G.heroDead = 5 + 1.5 * (G.deaths - 1);
+      G.deaths++; G.heroDead = 5 + 1.5 * (G.deaths - 1); G.camEase = 1e9;
       showBanner('장수가 쓰러졌다', '병사들이 흩어집니다', 2);
       SFX.play('lose', 0.5);
       for (const o of G.units) if (o.team === 0) { o.following = false; o.retarget = 0; }
@@ -1028,7 +1036,7 @@ function updateHero(dt) {
       const nh = makeHero(G.pc.x + 120, G.pc.y); nh.inv = 2;
       const i = G.units.indexOf(h); if (i >= 0) G.units[i] = nh; else G.units.push(nh);
       nh.dashCd = 0; nh.shoutCd = Math.max(0, h.shoutCd - 5); nh.rallyCd = 0;
-      G.hero = nh; showBanner('장수 복귀', '다시 병사를 모으세요', 1.4);
+      G.hero = nh; G.camEase = 0.8; showBanner('장수 복귀', '다시 병사를 모으세요', 1.4);
     }
     return;
   }
@@ -1066,7 +1074,7 @@ function updateHero(dt) {
 /* ---------------- Physics ---------------- */
 function physics(dt) {
   const U = G.units;
-  for (const u of U) { if (!u.alive) continue; u.x += u.vx * dt; u.y += u.vy * dt; }
+  for (const u of U) { if (!u.alive) continue; u.x += u.vx * dt; u.y += u.vy * dt; u.walk = (u.walk || 0) + hyp(u.vx, u.vy) * dt; }
   for (const u of U) {
     if (!u.alive) continue;
     query(u.x, u.y, 30, o => {
@@ -1166,7 +1174,7 @@ function resize() {
   DPR = Math.min(2, window.devicePixelRatio || 1);
   VW = innerWidth; VH = innerHeight;
   cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR);
-  zoom = Math.min(VW, VH) < 520 ? 0.76 : Math.min(VW, VH) < 800 ? 0.85 : 1;
+  zoom = Math.min(VW, VH) < 520 ? 0.92 : Math.min(VW, VH) < 800 ? 1.05 : 1.2;
 }
 addEventListener('resize', resize); resize();
 function screenToWorld(sx, sy) { return { x: (sx - VW / 2) / zoom + G.cam.x, y: (sy - VH / 2) / zoom + G.cam.y }; }
@@ -1176,17 +1184,18 @@ function inView(x, y, m = 40) { return x > view.x0 - m && x < view.x1 + m && y >
 function render(dt) {
   const h = G.hero;
   const focus = G.attract && G.attractPt ? G.attractPt : h.alive ? h : G.pc;
-  const k = Math.min(1, dt * 6);
-  G.cam.x += (focus.x - G.cam.x) * k; G.cam.y += (focus.y - G.cam.y) * k;
+  if (G.attract || G.camEase > 0) {
+    const k = Math.min(1, dt * 5);
+    G.cam.x += (focus.x - G.cam.x) * k; G.cam.y += (focus.y - G.cam.y) * k;
+    G.camEase = Math.max(0, (G.camEase || 0) - dt);
+  } else { G.cam.x = focus.x; G.cam.y = focus.y; }
   const hw = VW / 2 / zoom, hh = VH / 2 / zoom;
-  G.cam.x = MAPW > hw * 2 ? clamp(G.cam.x, hw - 60, MAPW - hw + 60) : MAPW / 2;
-  G.cam.y = MAPH > hh * 2 ? clamp(G.cam.y, hh - 60, MAPH - hh + 60) : MAPH / 2;
   const sx = G.shake ? (R() - 0.5) * G.shake : 0, sy = G.shake ? (R() - 0.5) * G.shake : 0;
   const cx = G.cam.x + sx, cy = G.cam.y + sy;
   view = { x0: cx - hw, y0: cy - hh, x1: cx + hw, y1: cy + hh };
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = '#1f2614'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#18200f'; ctx.fillRect(0, 0, cv.width, cv.height);
   const sc = DPR * zoom;
   ctx.setTransform(sc, 0, 0, sc, (-cx) * sc + VW * DPR / 2, (-cy) * sc + VH * DPR / 2);
 
@@ -1216,7 +1225,10 @@ function render(dt) {
     if (s.kind === 'castle') drawCastle(s); else if (s.kind === 'tower') drawTower(s); else drawOutpostFlag(s);
   }
   // units
-  for (const u of G.units) if (u.alive && inView(u.x, u.y)) drawUnit(u);
+  const vis = [];
+  for (const u of G.units) if (u.alive && inView(u.x, u.y, 60)) vis.push(u);
+  vis.sort((a, b) => a.y - b.y);
+  for (const u of vis) drawUnit(u);
   // trees (canopy over units, translucent when hero is near)
   for (const o of G.obst) if (o.kind === 'tree' && inView(o.x, o.y, o.r + 10)) drawTree(o);
   // arrows
@@ -1286,64 +1298,147 @@ function teamCol(t) { return t === 0 ? COL.blue : t === 1 ? COL.red : COL.neutra
 function teamDark(t) { return t === 0 ? COL.blueD : t === 1 ? COL.redD : '#4c4840'; }
 
 function drawUnit(u) {
-  const col = teamCol(u.team), dark = teamDark(u.team);
+  const P = PAL[u.team];
+  const sc = u.hero ? 1.45 : 1;
+  const flip = Math.cos(u.face) < 0 ? -1 : 1;
+  const aim = Math.atan2(Math.sin(u.face), Math.abs(Math.cos(u.face))) * 0.7;
+  const moving = hyp(u.vx, u.vy) > 8;
+  const ph = moving ? Math.sin((u.walk || 0) * 0.2) : 0;
+  const bob = moving ? Math.abs(ph) * 1.1 : 0;
+  const smax = u.hero ? 0.2 : 0.22;
+  const sw = u.swing > 0 ? 1 - u.swing / smax : 0;
+  const knight = u.type === 'knight';
   ctx.save(); ctx.translate(u.x, u.y);
-  ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(1, u.r * 0.55, u.r * 1.05, u.r * 0.55, 0, 0, TAU); ctx.fill();
-  if (u.following && !u.hero) { ctx.strokeStyle = u.team === 0 ? 'rgba(170,210,255,.55)' : 'rgba(255,170,160,.45)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0, u.r * 0.5, u.r + 3, (u.r + 3) * 0.5, 0, 0, TAU); ctx.stroke(); }
-  if (u.rage > 0) { ctx.strokeStyle = `rgba(226,173,59,${0.5 + Math.sin(G.t * 12) * 0.25})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, u.r + 4, 0, TAU); ctx.stroke(); }
-  if (u.hero) {
-    ctx.strokeStyle = u.team === 0 ? COL.gold : '#1a0d0a'; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.ellipse(0, u.r * 0.5, u.r + 7, (u.r + 7) * 0.5, 0, 0, TAU); ctx.stroke();
-  }
-  ctx.rotate(u.face);
-  const sw = u.swing > 0 ? Math.sin((1 - u.swing / 0.22) * Math.PI) : 0;
-  if (u.type === 'knight') {
-    ctx.fillStyle = '#6b4a2c'; ctx.beginPath(); ctx.ellipse(-2, 0, u.r * 1.45, u.r * 0.75, 0, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#563a22'; ctx.beginPath(); ctx.ellipse(u.r * 1.2, 0, u.r * 0.5, u.r * 0.38, 0, 0, TAU); ctx.fill();
-  }
-  if (u.hero) {
-    // cape
-    ctx.fillStyle = u.team === 0 ? '#9a2a20' : '#1a0d0a';
-    ctx.beginPath(); ctx.moveTo(-2, -u.r * 0.9); ctx.quadraticCurveTo(-u.r * 2.1, Math.sin(G.t * 8) * 3, -2, u.r * 0.9); ctx.closePath(); ctx.fill();
-  }
-  // weapon
-  ctx.lineCap = 'round';
-  if (u.type === 'spear') {
-    const ext = sw * 12;
-    ctx.strokeStyle = '#7a5a34'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-u.r * 0.6, u.r * 0.55); ctx.lineTo(u.r + 18 + ext, u.r * 0.55); ctx.stroke();
-    ctx.fillStyle = '#d9dde0'; ctx.beginPath(); ctx.moveTo(u.r + 24 + ext, u.r * 0.55); ctx.lineTo(u.r + 16 + ext, u.r * 0.55 - 3); ctx.lineTo(u.r + 16 + ext, u.r * 0.55 + 3); ctx.fill();
-  } else if (u.type === 'archer') {
-    ctx.strokeStyle = '#6e4a22'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(u.r * 0.2, 0, u.r + 2, -1.1, 1.1); ctx.stroke();
-    ctx.strokeStyle = 'rgba(240,230,200,.7)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(u.r * 0.2 + Math.cos(-1.1) * (u.r + 2) - sw * 4, Math.sin(-1.1) * (u.r + 2)); ctx.lineTo(u.r * 0.2 + Math.cos(1.1) * (u.r + 2) - sw * 4, Math.sin(1.1) * (u.r + 2)); ctx.stroke();
+  // ground marks
+  ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(0, 1, (knight ? 16 : u.r * 1.1) * sc, u.r * 0.45 * sc, 0, 0, TAU); ctx.fill();
+  if (u.following && !u.hero) { ctx.strokeStyle = u.team === 0 ? 'rgba(170,210,255,.6)' : 'rgba(255,170,160,.5)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0, 1, u.r + 4, (u.r + 4) * 0.45, 0, 0, TAU); ctx.stroke(); }
+  if (u.hero) { ctx.strokeStyle = u.team === 0 ? COL.gold : '#120806'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(0, 1, 22, 9, 0, 0, TAU); ctx.stroke(); }
+  if (u.rage > 0) { ctx.strokeStyle = `rgba(226,173,59,${0.55 + Math.sin(G.t * 12) * 0.25})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, 1, u.r * sc + 7, (u.r * sc + 7) * 0.5, 0, 0, TAU); ctx.stroke(); }
+  ctx.scale(flip * sc, sc);
+  let flagPos = null;
+  if (knight) {
+    drawHorse(P, moving ? (u.walk || 0) * 0.25 : 0);
+    ctx.translate(-1, -11);
   } else {
-    const len = u.hero ? u.r + 22 : u.r + 9;
-    const rot = u.hero ? (u.swing > 0 ? (u.swingDir || 1) * (1.2 - (1 - u.swing / 0.2) * 2.4) : 0.5) : (-0.9 + sw * 1.9);
-    ctx.save(); ctx.rotate(rot);
-    ctx.strokeStyle = u.hero ? '#f1f3f5' : '#cfd4d8'; ctx.lineWidth = u.hero ? 3.2 : 2;
-    ctx.beginPath(); ctx.moveTo(u.r * 0.4, 0); ctx.lineTo(len, 0); ctx.stroke();
-    ctx.strokeStyle = '#8a6a2a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(u.r * 0.55, -3); ctx.lineTo(u.r * 0.55, 3); ctx.stroke();
-    ctx.restore();
-    if (!u.hero && u.type === 'sword') { ctx.fillStyle = dark; ctx.beginPath(); ctx.ellipse(u.r * 0.15, -u.r * 0.8, u.r * 0.55, u.r * 0.3, 0.3, 0, TAU); ctx.fill(); }
+    // legs (trousers + boots)
+    ctx.fillStyle = P.cloth;
+    ctx.fillRect(-4 + ph * 2.2, -8, 3.2, 7); ctx.fillRect(0.8 - ph * 2.2, -8, 3.2, 7);
+    ctx.fillStyle = '#1b1510';
+    ctx.fillRect(-4.4 + ph * 2.2, -2, 4, 2.2); ctx.fillRect(0.6 - ph * 2.2, -2, 4, 2.2);
   }
-  // body
-  ctx.fillStyle = col; ctx.strokeStyle = dark; ctx.lineWidth = u.hero ? 2.5 : 1.8;
-  ctx.beginPath(); ctx.arc(0, 0, u.r, 0, TAU); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.beginPath(); ctx.arc(u.r * 0.2, -u.r * 0.25, u.r * 0.45, 0, TAU); ctx.fill();
+  const y0 = -bob;
+  // hero cape + back banner
   if (u.hero) {
-    ctx.fillStyle = u.team === 0 ? COL.gold : '#2a1410';
-    ctx.beginPath(); ctx.arc(0, 0, u.r * 0.45, 0, TAU); ctx.fill();
-    if (u.team === 1) { ctx.fillStyle = '#d9cfb8'; ctx.beginPath(); ctx.moveTo(-2, -u.r * 0.7); ctx.lineTo(-10, -u.r * 1.25); ctx.lineTo(2, -u.r * 0.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-2, u.r * 0.7); ctx.lineTo(-10, u.r * 1.25); ctx.lineTo(2, u.r * 0.5); ctx.fill(); }
+    const wv = Math.sin(G.t * 7) * 1.5 + (moving ? -2 : 0);
+    ctx.fillStyle = u.team === 0 ? '#a8261d' : '#140a08';
+    ctx.beginPath(); ctx.moveTo(-3, -18 + y0); ctx.quadraticCurveTo(-11 + wv, -10 + y0, -9 + wv, -3 + y0); ctx.lineTo(-2, -5 + y0); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#3a2a18'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-4, -12 + y0); ctx.lineTo(-6, -40 + y0); ctx.stroke();
+    const fw = Math.sin(G.t * 5) * 1.2;
+    ctx.fillStyle = u.team === 0 ? '#f0e4c4' : '#1d1d1d'; ctx.strokeStyle = u.team === 0 ? '#a8261d' : '#b23a2e'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(-6, -40 + y0); ctx.lineTo(-15 + fw, -39 + y0); ctx.lineTo(-15 + fw, -29 + y0); ctx.lineTo(-5.5, -30 + y0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    flagPos = { x: -10.3 + fw / 2, y: -34.5 + y0 };
   }
-  if (u.hitFlash > 0) { ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.arc(0, 0, u.r, 0, TAU); ctx.fill(); }
-  if (u.inv > 0 && Math.sin(G.t * 30) > 0) { ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(0, 0, u.r, 0, TAU); ctx.fill(); }
+  // shield on back arm (swordsmen)
+  if (u.type === 'sword') {
+    ctx.fillStyle = '#7a5530'; ctx.strokeStyle = P.armorD; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(-5, -12 + y0, 3.2, 5.6, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = P.trim; ctx.beginPath(); ctx.arc(-5, -12 + y0, 1.2, 0, TAU); ctx.fill();
+  }
+  // torso: lamellar armour (찰갑)
+  ctx.fillStyle = u.hero && u.team === 0 ? '#c59a3c' : P.armor;
+  ctx.strokeStyle = P.armorD; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(-5.5, -19 + y0, 11, 13, 2.5); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = u.hero && u.team === 0 ? '#7a5a1c' : P.armorD; ctx.lineWidth = 0.7;
+  for (let yy = -16; yy <= -9; yy += 2.4) { ctx.beginPath(); ctx.moveTo(-5, yy + y0); ctx.lineTo(5, yy + y0); ctx.stroke(); }
+  for (let xx = -3; xx <= 3; xx += 3) { ctx.beginPath(); ctx.moveTo(xx, -17 + y0); ctx.lineTo(xx, -8 + y0); ctx.stroke(); }
+  ctx.fillStyle = P.trim; ctx.fillRect(-5.5, -10 + y0, 11, 2);
+  // skirt of armour
+  ctx.fillStyle = P.armorD; ctx.beginPath(); ctx.moveTo(-5.5, -8 + y0); ctx.lineTo(5.5, -8 + y0); ctx.lineTo(6.5, -5 + y0); ctx.lineTo(-6.5, -5 + y0); ctx.closePath(); ctx.fill();
+  // head
+  ctx.fillStyle = '#e6c09a'; ctx.beginPath(); ctx.arc(0.5, -22.5 + y0, 4, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#1b1510'; ctx.fillRect(2.4, -23 + y0, 1.2, 1.2);
+  // helmet (투구): dome, cheek guards, spike, plume
+  ctx.fillStyle = P.helm; ctx.strokeStyle = P.helmD; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.arc(0.5, -23.5 + y0, 4.6, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillRect(-4.1, -23.5 + y0, 2.2, 5);
+  ctx.fillStyle = P.helmD; ctx.fillRect(-4.3, -24 + y0, 9.6, 1.3);
+  ctx.strokeStyle = P.helmD; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(0.5, -28 + y0); ctx.lineTo(0.5, -31 + y0); ctx.stroke();
+  if (u.general) {
+    ctx.fillStyle = '#d9cfb8';
+    ctx.beginPath(); ctx.moveTo(-2.5, -26 + y0); ctx.quadraticCurveTo(-7, -29 + y0, -6, -34 + y0); ctx.lineTo(-1.5, -27.5 + y0); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(3.5, -26 + y0); ctx.quadraticCurveTo(8, -29 + y0, 7, -34 + y0); ctx.lineTo(2.5, -27.5 + y0); ctx.fill();
+  } else {
+    const pw = Math.sin(G.t * 6 + u.id) * 0.8 - (moving ? 1.5 : 0);
+    ctx.fillStyle = u.hero ? '#d8261b' : P.plume;
+    ctx.beginPath(); ctx.moveTo(0.5, -31 + y0); ctx.quadraticCurveTo(-3 + pw, -33 + y0, -5 + pw, -28 + y0); ctx.quadraticCurveTo(-2 + pw, -30 + y0, 0.5, -30 + y0); ctx.fill();
+  }
+  // weapon arm
+  const hx = 4.5, hy = -12.5 + y0;
+  ctx.save(); ctx.translate(hx, hy);
+  ctx.lineCap = 'round';
+  if (u.type === 'spear' || knight) {
+    const th = sw > 0 ? Math.sin(sw * Math.PI) * 9 : 0;
+    ctx.rotate(aim * 0.8 - (knight ? 0.05 : 0.1)); ctx.translate(th, 0);
+    const L = knight ? 30 : 24;
+    ctx.strokeStyle = '#6b4a28'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(L, 0); ctx.stroke();
+    ctx.fillStyle = '#dfe3e6'; ctx.beginPath(); ctx.moveTo(L + 6, 0); ctx.lineTo(L - 1, -2.2); ctx.lineTo(L - 1, 2.2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = u.team === 0 ? '#c8322a' : '#1b1b1b'; ctx.beginPath(); ctx.arc(L - 2, 2.5, 1.8, 0, TAU); ctx.fill();
+  } else if (u.type === 'archer') {
+    ctx.rotate(aim);
+    const pull = sw > 0 ? Math.sin(sw * Math.PI) * 3 : 0;
+    ctx.strokeStyle = '#5a3a1c'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(1, -9); ctx.quadraticCurveTo(6, -6, 4, 0); ctx.quadraticCurveTo(6, 6, 1, 9); ctx.stroke();
+    ctx.strokeStyle = 'rgba(240,230,200,.8)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(1, -9); ctx.lineTo(-pull, 0); ctx.lineTo(1, 9); ctx.stroke();
+    // quiver on back
+  } else {
+    // 환두대도: ring-pommel sword
+    let a;
+    if (u.hero) a = u.swing > 0 ? (u.swingDir || 1) * (1.3 - sw * 2.6) + aim : -0.9 + aim;
+    else a = (sw > 0 ? -1.4 + Math.sin(sw * Math.PI) * 2.2 : -0.9) + aim;
+    ctx.rotate(a);
+    const L = u.hero ? 17 : 12;
+    ctx.strokeStyle = '#eef1f3'; ctx.lineWidth = u.hero ? 2.4 : 1.8; ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(L, 0); ctx.stroke();
+    ctx.strokeStyle = '#c9a24a'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(1.5, -2.2); ctx.lineTo(1.5, 2.2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-1.8, 0, 1.6, 0, TAU); ctx.stroke();
+  }
   ctx.restore();
-  if (u.stun > 0) { ctx.fillStyle = '#ffe9a8'; for (let i = 0; i < 3; i++) { const a = G.t * 6 + i * 2.1; ctx.fillRect(u.x + Math.cos(a) * 8 - 1.5, u.y - u.r - 6 + Math.sin(a) * 3 - 1.5, 3, 3); } }
-  if (u.hp < u.maxHp && !(u === G.hero)) {
-    const w = u.hero ? 40 : u.r * 2 + 4, y = u.y - u.r - (u.hero ? 14 : 8);
+  ctx.fillStyle = '#e6c09a'; ctx.beginPath(); ctx.arc(hx, hy, 1.7, 0, TAU); ctx.fill();
+  if (u.type === 'archer') { ctx.fillStyle = '#6b4a28'; ctx.fillRect(-6.5, -21 + y0, 2.6, 9); ctx.fillStyle = '#efe1bd'; ctx.fillRect(-6.3, -23 + y0, 0.8, 2.5); ctx.fillRect(-5, -23.5 + y0, 0.8, 2.5); }
+  if (u.hitFlash > 0) { ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.ellipse(0, -15 + y0, 7, 13, 0, 0, TAU); ctx.fill(); }
+  if (u.inv > 0 && Math.sin(G.t * 30) > 0) { ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(0, -15 + y0, 7, 13, 0, 0, TAU); ctx.fill(); }
+  ctx.restore();
+  if (flagPos) {
+    const mark = u.team === 0 ? PLAYER_FACTION.mark : enemyFaction(G.stage).mark;
+    ctx.font = `700 ${7 * sc}px "Noto Serif KR","Noto Sans KR",serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = u.team === 0 ? '#a8261d' : '#e8d8b8';
+    ctx.fillText(mark, u.x + flagPos.x * flip * sc, u.y + flagPos.y * sc);
+    ctx.textBaseline = 'alphabetic';
+  }
+  const top = u.y - (knight ? 44 : 34) * sc - 4;
+  if (u.stun > 0) { ctx.fillStyle = '#ffe9a8'; for (let i = 0; i < 3; i++) { const a = G.t * 6 + i * 2.1; ctx.fillRect(u.x + Math.cos(a) * 8 - 1.5, top + 2 + Math.sin(a) * 3 - 1.5, 3, 3); } }
+  if (u.hp < u.maxHp && u !== G.hero) {
+    const w = u.hero ? 40 : 18, y = top;
     ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(u.x - w / 2, y, w, u.hero ? 5 : 3);
     ctx.fillStyle = u.team === 0 ? '#7fd86a' : '#ff6a5a'; ctx.fillRect(u.x - w / 2, y, w * Math.max(0, u.hp / u.maxHp), u.hero ? 5 : 3);
-    if (u.general) { ctx.font = '700 11px "Noto Sans KR",sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#000'; ctx.fillText(u.name, u.x + 1, y - 3); ctx.fillStyle = COL.redL; ctx.fillText(u.name, u.x, y - 4); }
-  } else if (u.general) { ctx.font = '700 11px "Noto Sans KR",sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#000'; ctx.fillText(u.name, u.x + 1, u.y - u.r - 13); ctx.fillStyle = COL.redL; ctx.fillText(u.name, u.x, u.y - u.r - 14); }
+  }
+  if (u.general) { ctx.font = '700 11px "Noto Sans KR",sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#000'; ctx.fillText(u.name, u.x + 1, top - 3); ctx.fillStyle = COL.redL; ctx.fillText(u.name, u.x, top - 4); }
+}
+// 개마무사 armoured horse, drawn facing +x, feet at y=0
+function drawHorse(P, step) {
+  const l = Math.sin(step) * 3, l2 = Math.sin(step + Math.PI) * 3;
+  ctx.strokeStyle = '#3b2616'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  for (const [x, o] of [[-8, l], [-5, l2], [6, l2], [9, l]]) { ctx.beginPath(); ctx.moveTo(x, -7); ctx.lineTo(x + o, 0); ctx.stroke(); }
+  ctx.strokeStyle = '#2a1a10'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-12, -11); ctx.quadraticCurveTo(-17, -8, -15, -3); ctx.stroke();
+  ctx.fillStyle = '#5c3d22'; ctx.beginPath(); ctx.ellipse(0, -10, 12, 5.5, 0, 0, TAU); ctx.fill();
+  // barding: scale armour over the horse
+  ctx.fillStyle = P.armorD; ctx.beginPath(); ctx.ellipse(0, -10.5, 11, 4.8, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = P.armor;
+  for (let x = -8; x <= 8; x += 3.2) for (let y = -13; y <= -9; y += 2.6) { ctx.beginPath(); ctx.arc(x + ((y | 0) % 2 ? 1.6 : 0), y, 1.1, 0, Math.PI); ctx.fill(); }
+  // neck + armoured head (마갑 + 마주)
+  ctx.fillStyle = '#5c3d22'; ctx.beginPath(); ctx.moveTo(8, -13); ctx.lineTo(13, -20); ctx.lineTo(16, -18); ctx.lineTo(11, -9); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = P.helm; ctx.strokeStyle = P.helmD; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(12, -21); ctx.lineTo(19, -17.5); ctx.lineTo(18, -15); ctx.lineTo(12.5, -16.5); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = P.plume; ctx.beginPath(); ctx.arc(12.5, -22, 1.4, 0, TAU); ctx.fill();
 }
 
 function drawRock(o) {
@@ -1383,24 +1478,52 @@ function drawCastle(s) {
     ctx.fillStyle = '#9a9286'; ctx.beginPath(); ctx.arc(x + dx * w, y + dy * w, 20, 0, TAU); ctx.fill(); ctx.stroke();
     ctx.fillStyle = teamCol(s.team); ctx.beginPath(); ctx.arc(x + dx * w, y + dy * w, 11, 0, TAU); ctx.fill();
   }
-  ctx.fillStyle = '#7d766a'; ctx.fillRect(x - 24, y - 24, 48, 48); ctx.strokeRect(x - 24, y - 24, 48, 48);
-  ctx.fillStyle = teamDark(s.team); ctx.beginPath(); ctx.moveTo(x - 24, y - 24); ctx.lineTo(x, y - 6); ctx.lineTo(x + 24, y - 24); ctx.lineTo(x + 24, y + 24); ctx.lineTo(x, y + 6); ctx.lineTo(x - 24, y + 24); ctx.closePath(); ctx.fill();
+  drawPavilion(x, y + 8, 1.15, s.team);
   // banner
-  ctx.strokeStyle = '#3a2f22'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 62); ctx.stroke();
+  ctx.strokeStyle = '#3a2f22'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x + 44, y + 30); ctx.lineTo(x + 44, y - 50); ctx.stroke();
   const wave = Math.sin(G.t * 4) * 4;
-  ctx.fillStyle = teamCol(s.team); ctx.beginPath(); ctx.moveTo(x, y - 62); ctx.quadraticCurveTo(x + 16, y - 66 + wave, x + 32, y - 58 + wave); ctx.lineTo(x + 30, y - 44 + wave); ctx.quadraticCurveTo(x + 16, y - 50 + wave, x, y - 46); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = teamCol(s.team); ctx.beginPath(); ctx.moveTo(x + 44, y - 50); ctx.quadraticCurveTo(x + 58, y - 54 + wave, x + 72, y - 46 + wave); ctx.lineTo(x + 70, y - 28 + wave); ctx.quadraticCurveTo(x + 58, y - 34 + wave, x + 44, y - 30); ctx.closePath(); ctx.fill();
+  ctx.font = '700 13px "Noto Serif KR","Noto Sans KR",serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#f3e6c8'; ctx.fillText(s.team === 0 ? PLAYER_FACTION.mark : enemyFaction(G.stage).mark, x + 57, y - 40 + wave * 0.6); ctx.textBaseline = 'alphabetic';
   hpBar(x, y - w - 28, 140, s.hp / s.maxHp, s.team);
+}
+// 누각: red pillars, green beams, curved tiled roof with upswept eaves
+function drawPavilion(x, y, k, team) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(k, k);
+  ctx.fillStyle = '#8a8274'; ctx.fillRect(-30, -8, 60, 10);
+  ctx.fillStyle = '#a8322a'; for (const px of [-24, -9, 6, 21]) ctx.fillRect(px, -26, 3.5, 18);
+  ctx.fillStyle = '#2f6b55'; ctx.fillRect(-28, -29, 56, 4);
+  ctx.fillStyle = '#d6b45a'; ctx.fillRect(-28, -26, 56, 1.2);
+  const roof = (w, yb, h) => {
+    ctx.beginPath(); ctx.moveTo(-w - 8, yb - 3); ctx.quadraticCurveTo(-w, yb, -w + 6, yb - h * 0.45);
+    ctx.lineTo(-w * 0.55, yb - h); ctx.lineTo(w * 0.55, yb - h); ctx.lineTo(w - 6, yb - h * 0.45);
+    ctx.quadraticCurveTo(w, yb, w + 8, yb - 3); ctx.quadraticCurveTo(0, yb - 5, -w - 8, yb - 3); ctx.closePath();
+  };
+  ctx.fillStyle = '#34302c'; roof(36, -27, 16); ctx.fill();
+  ctx.strokeStyle = '#55504a'; ctx.lineWidth = 0.8;
+  for (let i = -28; i <= 28; i += 4) { ctx.beginPath(); ctx.moveTo(i, -30); ctx.lineTo(i * 0.6, -42); ctx.stroke(); }
+  ctx.fillStyle = '#a8322a'; for (const px of [-14, 11]) ctx.fillRect(px, -50, 3, 8);
+  ctx.fillStyle = '#2f6b55'; ctx.fillRect(-16, -52, 32, 3);
+  ctx.fillStyle = '#34302c'; roof(22, -51, 11); ctx.fill();
+  ctx.strokeStyle = '#1e1b18'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-12, -62); ctx.lineTo(12, -62); ctx.stroke();
+  ctx.fillStyle = team === 0 ? COL.blue : COL.red; ctx.fillRect(-6, -40, 12, 4);
+  ctx.restore();
 }
 function drawTower(s) {
   if (s.hp <= 0) { ctx.fillStyle = '#5e574c'; for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.arc(s.x + Math.cos(i * 2.2) * 14, s.y + Math.sin(i * 2.2) * 12, 7, 0, TAU); ctx.fill(); } return; }
   ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(s.x + 6, s.y + 10, s.r * 1.1, s.r * 0.7, 0, 0, TAU); ctx.fill();
-  ctx.fillStyle = s.flash > 0 ? '#cfc6b4' : '#948c7f'; ctx.strokeStyle = '#4a453c'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = teamDark(s.team); ctx.beginPath();
-  for (let i = 0; i < 8; i++) { const a = i / 8 * TAU, rr = i % 2 ? s.r * 0.45 : s.r * 0.75; ctx.lineTo(s.x + Math.cos(a) * rr, s.y + Math.sin(a) * rr); }
-  ctx.closePath(); ctx.fill();
-  ctx.fillStyle = teamCol(s.team); ctx.beginPath(); ctx.arc(s.x, s.y, 5, 0, TAU); ctx.fill();
-  hpBar(s.x, s.y - s.r - 16, 56, s.hp / s.maxHp, s.team);
+  const x = s.x, y = s.y + 14;
+  ctx.fillStyle = s.flash > 0 ? '#cfc6b4' : '#8b8478'; ctx.strokeStyle = '#4a453c'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(x, y - 4, 24, 10, 0, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#5a3d22'; ctx.lineWidth = 3;
+  for (const [a, b] of [[-16, -12], [16, 12], [-8, -6], [8, 6]]) { ctx.beginPath(); ctx.moveTo(x + a, y - 4); ctx.lineTo(x + b, y - 40); ctx.stroke(); }
+  ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x - 14, y - 16); ctx.lineTo(x + 14, y - 28); ctx.moveTo(x + 14, y - 16); ctx.lineTo(x - 14, y - 28); ctx.stroke();
+  ctx.fillStyle = s.flash > 0 ? '#c99b6a' : '#7a5530'; ctx.fillRect(x - 17, y - 46, 34, 8);
+  ctx.fillStyle = '#a8322a'; ctx.fillRect(x - 15, y - 58, 3, 12); ctx.fillRect(x + 12, y - 58, 3, 12);
+  ctx.fillStyle = '#34302c';
+  ctx.beginPath(); ctx.moveTo(x - 26, y - 56); ctx.quadraticCurveTo(x - 20, y - 56, x - 16, y - 64); ctx.lineTo(x + 16, y - 64); ctx.quadraticCurveTo(x + 20, y - 56, x + 26, y - 56); ctx.quadraticCurveTo(x, y - 60, x - 26, y - 56); ctx.fill();
+  ctx.fillStyle = teamCol(s.team); ctx.fillRect(x - 4, y - 70, 8, 6);
+  hpBar(s.x, s.y - 66, 56, s.hp / s.maxHp, s.team);
 }
 function drawOutpostZone(s) {
   ctx.fillStyle = s.team === 0 ? 'rgba(61,123,217,.10)' : s.team === 1 ? 'rgba(207,63,53,.10)' : 'rgba(240,230,200,.06)';
