@@ -236,6 +236,8 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
    철기 공성전 — single-file canvas game
    ========================================================= */
 const MAPW = 3600, MAPH = 2400, TAU = Math.PI * 2;
+const POP = 3; // army size multiplier: squads of POP spawn at once
+const SPR = new Map(); // soldier sprite cache
 const $ = s => document.querySelector(s);
 const R = Math.random;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -321,23 +323,23 @@ function applyFactions(stage) {
 function DIFF(s) {
   return {
     eSpawn: Math.max(2.2, 7.4 - 0.5 * (s - 1)),
-    eMult: 1 + 0.13 * (s - 1),
-    eCap: Math.min(120, 30 + 7 * s),
+    eMult: 1 + 0.19 * (s - 1),
+    eCap: Math.min(330, (30 + 7 * s) * POP),
     eTypes: ['sword', ...(s >= 2 ? ['spear'] : []), ...(s >= 3 || (enemyFaction(s).weights || {}).archer ? ['archer'] : []), ...(s >= 5 || (enemyFaction(s).weights || {}).knight ? ['knight'] : [])],
     towers: Math.min(5, Math.floor(s / 2)),
     general: s >= 3,
-    castleHp: 1400 + 450 * (s - 1),
+    castleHp: (1400 + 450 * (s - 1)) * POP,
     outposts: Math.min(9, 4 + Math.floor(s / 2)),
     enemyOut: Math.min(3, Math.floor((s - 1) / 2)),
-    waveSize: 5 + s,
-    startArmy: 5 + 2 * s,
+    waveSize: Math.round((5 + s) * POP * 0.85),
+    startArmy: (5 + 2 * s) * POP,
   };
 }
 function PLAYER() {
   const u = save.up;
   return {
     heroHp: 320 * (1 + 0.25 * u.hp), heroAtk: 30 * (1 + 0.2 * u.atk), heroSpd: 140 * (1 + 0.06 * (u.horse || 0)), regen: 1 + 0.5 * (u.medic || 0),
-    followR: 230 * (1 + 0.15 * u.command), cap: 36 + 6 * u.command,
+    followR: 230 * (1 + 0.15 * u.command), cap: (36 + 6 * u.command) * POP,
     spawn: 5.4 * Math.pow(0.88, u.barracks), hpM: 1 + 0.12 * u.drill, atkM: 1 + 0.08 * u.drill,
     types: ['sword', ...(u.spear ? ['spear'] : []), ...(u.archer ? ['archer'] : []), ...(u.knight ? ['knight'] : [])],
   };
@@ -411,7 +413,7 @@ function newBattle(stage) {
     tips: [], cam: { x: 0, y: 0 }, paused: false
   };
   const py = MAPH / 2 + (rng() - 0.5) * 700, ey = MAPH / 2 + (rng() - 0.5) * 900;
-  G.pc = addStruct({ kind: 'castle', team: 0, x: 330, y: py, r: 72, hp: 2600, maxHp: 2600, spawnT: 1.5 });
+  G.pc = addStruct({ kind: 'castle', team: 0, x: 330, y: py, r: 72, hp: 2600 * POP, maxHp: 2600 * POP, spawnT: 1.5 });
   G.ec = addStruct({ kind: 'castle', team: 1, x: MAPW - 330, y: ey, r: 72, hp: d.castleHp, maxHp: d.castleHp, spawnT: 3 });
 
   const outs = []; let tries = 0;
@@ -438,7 +440,7 @@ function newBattle(stage) {
       x = G.ec.x + Math.cos(a) * rr; y = G.ec.y + Math.sin(a) * rr;
     }
     x = clamp(x, 120, MAPW - 120); y = clamp(y, 120, MAPH - 120);
-    const hp = 520 * d.eMult;
+    const hp = 520 * d.eMult * 2;
     addStruct({ kind: 'tower', team: 1, x, y, r: 26, hp, maxHp: hp, shootCd: rng() });
   }
 
@@ -477,12 +479,12 @@ function newBattle(stage) {
   // armies
   G.hero = makeHero(G.pc.x + 120, G.pc.y);
   G.units.push(G.hero);
-  for (let i = 0; i < 10; i++) spawnUnit(0, i < 7 || !p.types[1] ? 'sword' : p.types[1 + (i % (p.types.length - 1))], G.pc.x + 110 + R() * 90, G.pc.y + (R() - 0.5) * 160);
+  for (let i = 0; i < 10 * POP; i++) spawnUnit(0, i % 10 < 7 || !p.types[1] ? 'sword' : p.types[1 + (i % (p.types.length - 1))], G.pc.x + 110 + R() * 160, G.pc.y + (R() - 0.5) * 260);
   for (let i = 0; i < d.startArmy; i++) {
-    const u = spawnUnit(1, pickType(d.eTypes, enemyFaction(stage).weights), G.ec.x - 170 - R() * 80, G.ec.y + (R() - 0.5) * 180);
+    const u = spawnUnit(1, pickType(d.eTypes, enemyFaction(stage).weights), G.ec.x - 170 - R() * 160, G.ec.y + (R() - 0.5) * 280);
     u.role = 'rally';
   }
-  for (const s of ops) if (s.team === 1) for (let i = 0; i < 3; i++) {
+  for (const s of ops) if (s.team === 1) for (let i = 0; i < 3 * POP; i++) {
     const u = spawnUnit(1, pickType(d.eTypes, enemyFaction(stage).weights), s.x + (R() - 0.5) * 60, s.y + (R() - 0.5) * 60);
     u.role = 'guard'; u.home = s;
   }
@@ -619,7 +621,7 @@ addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; input.mouseDown = false; if (state === 'play') pause(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(); });
 
-const cv = $('#game'), ctx = cv.getContext('2d');
+const cv = $('#game'); let ctx = cv.getContext('2d');
 const stickEl = $('#stick');
 let joyId = null, joyBase = { x: 0, y: 0 };
 cv.addEventListener('contextmenu', e => e.preventDefault());
@@ -901,6 +903,7 @@ function attack(u, t) {
   let dmg = u.atk * atkMul(u) * (0.85 + R() * 0.3);
   if (u.type === 'spear' && t.type === 'knight') dmg *= 2.5;
   if (u.type === 'knight' && !t.kind) dmg *= 1.1;
+  if (t.kind) dmg *= 0.5; // walls hold against massed troops
   if (u.ranged) { fireArrow(u, t, dmg, u.team); sfxAt('arrow', u.x, u.y, 0.5); }
   else {
     hit(t, dmg, u);
@@ -944,11 +947,15 @@ function hit(t, dmg, src) {
 }
 function killUnit(u, src) {
   u.alive = false;
-  if (G.decals.length > 260) G.decals.shift();
-  G.decals.push({ x: u.x, y: u.y, r: u.r, team: u.team, a: R() * TAU, t: G.t });
+  if (groundCanvas) {
+    const g = groundCanvas.getContext('2d'), S = 0.5;
+    g.globalAlpha = 0.32; g.fillStyle = '#3b1d14'; g.beginPath(); g.ellipse(u.x * S, u.y * S, u.r * 1.3 * S, u.r * 0.8 * S, R() * TAU, 0, TAU); g.fill();
+    g.globalAlpha = 0.4; g.fillStyle = u.team === 0 ? COL.blueD : COL.redD; g.beginPath(); g.arc((u.x + 2) * S, u.y * S, u.r * 0.55 * S, 0, TAU); g.fill();
+    g.globalAlpha = 1;
+  }
   if (u.team === 1) {
     G.kills++;
-    const g = u.general ? 60 : TYPES[u.type] ? TYPES[u.type].gold : 2;
+    const g = u.general ? 60 : Math.max(1, Math.round((TYPES[u.type] ? TYPES[u.type].gold : 2) * (R() < 0.5 ? 0.34 : 0.5)));
     G.gold += g;
     if (src === G.hero) { G.heroKills++; addText(u.x, u.y - 14, `+${g}`, COL.gold, 0.9); }
     if (u.general) {
@@ -997,7 +1004,7 @@ function shoot(s, range, dmg, cd, dt) {
   s.shootCd -= dt; if (s.shootCd > 0) return;
   let best = null, bd = range;
   query(s.x, s.y, range, o => { if (o.team === s.team || !o.alive) return; const d = hyp(o.x - s.x, o.y - s.y); if (d < bd) { bd = d; best = o; } });
-  if (best) { s.shootCd = cd; fireArrow({ x: s.x, y: s.y - 24, team: s.team }, best, dmg, s.team); sfxAt('arrow', s.x, s.y, 0.6); }
+  if (best) { s.shootCd = cd; fireArrow({ x: s.x, y: s.y - 24, team: s.team }, best, dmg, s.team); fireArrow({ x: s.x + 12, y: s.y - 20, team: s.team }, best, dmg, s.team); sfxAt('arrow', s.x, s.y, 0.6); }
   else s.shootCd = 0.3;
 }
 function updateStructs(dt) {
@@ -1009,16 +1016,16 @@ function updateStructs(dt) {
       if (s.spawnT <= 0) {
         s.spawnT = s.team === 0 ? G.p.spawn : G.d.eSpawn;
         const cap = s.team === 0 ? G.p.cap : G.d.eCap;
-        if (G.count[s.team] < cap) {
+        for (let q = 0; q < POP && G.count[s.team] + q < cap; q++) {
           const dir = s.team === 0 ? 1 : -1;
-          const u = spawnUnit(s.team, pickType(s.team === 0 ? G.p.types : G.d.eTypes, s.team === 1 ? FAC_THEM.weights : null), s.x + dir * (s.r + 24), s.y + (R() - 0.5) * 70);
+          const u = spawnUnit(s.team, pickType(s.team === 0 ? G.p.types : G.d.eTypes, s.team === 1 ? FAC_THEM.weights : null), s.x + dir * (s.r + 24 + q * 14), s.y + (R() - 0.5) * 110);
           if (s.team === 1) {
             if (G.stage >= 2 && R() < 0.22) {
               u.role = 'guard';
               const mine = G.structs.filter(o => o.kind === 'outpost' && o.team === 1);
               u.home = mine.length && R() < 0.6 ? mine[(R() * mine.length) | 0] : G.ec;
               let g = 0; for (const o of G.units) if (o.alive && o.team === 1 && o.role === 'guard' && o.home === u.home) g++;
-              if (g > (u.home === G.ec ? 8 : 4)) u.role = 'rally';
+              if (g > (u.home === G.ec ? 8 : 4) * POP) u.role = 'rally';
             } else u.role = 'rally';
           }
         }
@@ -1048,12 +1055,12 @@ function updateStructs(dt) {
         if (s.spawnT <= 0) {
           s.spawnT = s.team === 0 ? 16 : 19;
           const cap = s.team === 0 ? G.p.cap : G.d.eCap;
-          if (G.count[s.team] < cap) {
-            const list = (s.team === 0 ? G.p.types : G.d.eTypes).filter(t => t !== 'knight');
-            const u = spawnUnit(s.team, pickType(list, s.team === 1 ? FAC_THEM.weights : null), s.x + (R() - 0.5) * 40, s.y + (R() - 0.5) * 40);
+          const list = (s.team === 0 ? G.p.types : G.d.eTypes).filter(t => t !== 'knight');
+          for (let q = 0; q < POP && G.count[s.team] + q < cap; q++) {
+            const u = spawnUnit(s.team, pickType(list, s.team === 1 ? FAC_THEM.weights : null), s.x + (R() - 0.5) * 70, s.y + (R() - 0.5) * 70);
             if (s.team === 1) {
               let g = 0; for (const o of G.units) if (o.alive && o.team === 1 && o.role === 'guard' && o.home === s) g++;
-              if (g < 4) { u.role = 'guard'; u.home = s; } else u.role = 'rally';
+              if (g < 4 * POP) { u.role = 'guard'; u.home = s; } else u.role = 'rally';
             }
           }
         }
@@ -1157,7 +1164,7 @@ function enemyStrategy(dt) {
   G.waveT += dt;
   let rally = 0;
   for (const u of G.units) if (u.alive && u.team === 1 && u.role === 'rally') rally++;
-  if (rally >= G.d.waveSize || (G.waveT > 38 && rally >= 3)) {
+  if (G.t > 30 && (rally >= G.d.waveSize || (G.waveT > 38 && rally >= 3 * POP))) {
     for (const u of G.units) if (u.alive && u.team === 1 && u.role === 'rally') { u.role = 'attack'; u.retarget = R() * 0.5; }
     G.waveT = 0;
     if (G.t > 5) { showBanner('적군 진격', `${rally}명의 적이 몰려옵니다`, 1.6); SFX.play('horn', 0.6); }
@@ -1223,6 +1230,7 @@ function resize() {
   VW = innerWidth; VH = innerHeight;
   cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR);
   cv.style.width = VW + 'px'; cv.style.height = VH + 'px';
+  SPR.clear();
   zoom = Math.min(VW, VH) < 520 ? 0.92 : Math.min(VW, VH) < 800 ? 1.05 : 1.2;
 }
 addEventListener('resize', resize); resize();
@@ -1253,16 +1261,6 @@ function render(dt) {
   if (gx1 > gx0 && gy1 > gy0) ctx.drawImage(groundCanvas, gx0 * 0.5, gy0 * 0.5, (gx1 - gx0) * 0.5, (gy1 - gy0) * 0.5, gx0, gy0, gx1 - gx0, gy1 - gy0);
   ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 6; ctx.strokeRect(0, 0, MAPW, MAPH);
 
-  // decals
-  for (const dcl of G.decals) {
-    if (!inView(dcl.x, dcl.y)) continue;
-    const age = G.t - dcl.t, a = Math.max(0, 1 - age / 40);
-    if (a <= 0) continue;
-    ctx.globalAlpha = 0.45 * a;
-    ctx.fillStyle = '#3b1d14'; ctx.beginPath(); ctx.ellipse(dcl.x, dcl.y, dcl.r * 1.3, dcl.r * 0.8, dcl.a, 0, TAU); ctx.fill();
-    ctx.fillStyle = dcl.team === 0 ? COL.blueD : COL.redD; ctx.beginPath(); ctx.arc(dcl.x + 2, dcl.y, dcl.r * 0.55, 0, TAU); ctx.fill();
-  }
-  ctx.globalAlpha = 1;
 
   // outposts capture zones (below units)
   for (const s of G.structs) if (s.kind === 'outpost' && inView(s.x, s.y, s.capR + 20)) drawOutpostZone(s);
@@ -1346,7 +1344,54 @@ function drawOffscreenMarkers() {
 function teamCol(t) { return t === 0 ? COL.blue : t === 1 ? COL.red : COL.neutral; }
 function teamDark(t) { return t === 0 ? COL.blueD : t === 1 ? COL.redD : '#4c4840'; }
 
+// ---- sprite cache: soldiers are drawn once per pose and reused ----
+const SPR_BOX = { sword: [-16, -48, 26, 6], archer: [-16, -48, 26, 6], spear: [-20, -48, 48, 6], knight: [-28, -66, 60, 6], bearer: [-24, -68, 26, 6] };
 function drawUnit(u) {
+  if (u.hero) return drawUnitLive(u);
+  const F = u.team === 0 ? FAC_US : FAC_THEM;
+  const bearer = u.type === 'sword' && u.id % 7 === 0;
+  const flip = Math.cos(u.face) < 0 ? -1 : 1;
+  const moving = hyp(u.vx, u.vy) > 8;
+  const wf = moving ? (((u.walk || 0) * 0.16 / TAU * 8) | 0) % 8 : -1;
+  const sf = u.swing > 0 ? Math.min(4, ((1 - u.swing / 0.22) * 5) | 0) : -1;
+  const ab = Math.round(Math.atan2(Math.sin(u.face), Math.abs(Math.cos(u.face))) / (Math.PI / 2) * 2);
+  const key = `${F.mark}${u.team}${u.type}${bearer ? 'b' + flip : ''}|${wf}|${sf}|${ab}`;
+  let sp = SPR.get(key);
+  if (!sp) {
+    if (SPR.size > 1400) SPR.clear();
+    const box = SPR_BOX[bearer ? 'bearer' : u.type], k = Math.min(2.6, DPR * zoom);
+    const bx0 = bearer && flip < 0 ? -box[2] : box[0], bx1 = bearer && flip < 0 ? -box[0] : box[2];
+    const c = document.createElement('canvas');
+    c.width = Math.ceil((bx1 - bx0) * k); c.height = Math.ceil((box[3] - box[1]) * k);
+    const pseudo = {
+      x: 0, y: 0, face: bearer && flip < 0 ? Math.PI - ab * Math.PI / 4 : ab * Math.PI / 4, vx: moving ? 20 : 0, vy: 0,
+      walk: wf >= 0 ? (wf + 0.5) / 8 * TAU / 0.16 : 0, swing: sf >= 0 ? 0.22 * (1 - (sf + 0.5) / 5) : 0,
+      hero: false, type: u.type, id: bearer ? 7 : 1, team: u.team, r: u.r, hp: 1, maxHp: 1, following: false, rage: 0, hitFlash: 0, inv: 0, stun: 0
+    };
+    const savedCtx = ctx, savedT = G.t;
+    ctx = c.getContext('2d'); G.t = 0;
+    ctx.setTransform(k, 0, 0, k, -bx0 * k, -box[1] * k);
+    try { drawUnitLive(pseudo, true); } finally { ctx = savedCtx; G.t = savedT; }
+    sp = { c, x0: bx0, y0: box[1], w: bx1 - bx0, h: box[3] - box[1] };
+    SPR.set(key, sp);
+  }
+  const knight = u.type === 'knight';
+  // live overlays under the figure
+  if (u.following) { ctx.strokeStyle = hexA(F.clothL, 0.65); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.ellipse(u.x, u.y + 1, knight ? 17 : 10, knight ? 6 : 4.2, 0, 0, TAU); ctx.stroke(); }
+  if (u.rage > 0) { ctx.strokeStyle = `rgba(226,173,59,${0.55 + Math.sin(G.t * 12) * 0.25})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(u.x, u.y + 1, 14, 6, 0, 0, TAU); ctx.stroke(); }
+  if (flip < 0 && !bearer) {
+    ctx.save(); ctx.translate(u.x, u.y); ctx.scale(-1, 1);
+    ctx.drawImage(sp.c, sp.x0, sp.y0, sp.w, sp.h); ctx.restore();
+  } else ctx.drawImage(sp.c, u.x + sp.x0, u.y + sp.y0, sp.w, sp.h);
+  if (u.hitFlash > 0) { ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.ellipse(u.x, u.y - (knight ? 26 : 17), 7, knight ? 11 : 14, 0, 0, TAU); ctx.fill(); }
+  const top = u.y - (knight ? 50 : 40);
+  if (u.stun > 0) { ctx.fillStyle = '#ffe9a8'; for (let i = 0; i < 3; i++) { const a = G.t * 6 + i * 2.1; ctx.fillRect(u.x + Math.cos(a) * 8 - 1.5, top + 2 + Math.sin(a) * 3 - 1.5, 3, 3); } }
+  if (u.hp < u.maxHp) {
+    ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(u.x - 9, top, 18, 3);
+    ctx.fillStyle = u.team === 0 ? '#9fe08a' : '#ff7a66'; ctx.fillRect(u.x - 9, top, 18 * Math.max(0, u.hp / u.maxHp), 3);
+  }
+}
+function drawUnitLive(u, sprite) {
   const F = u.team === 0 ? FAC_US : FAC_THEM;
   const sc = u.hero ? 1.3 : 1;
   const flip = Math.cos(u.face) < 0 ? -1 : 1;
