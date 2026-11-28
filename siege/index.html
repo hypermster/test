@@ -128,6 +128,11 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
 .goldline{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-size:22px;color:#7a5410}
 .goldline::before{content:"";width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fbe39a,#c48a1c);box-shadow:0 0 0 1px #6b4a0d}
 .hint{font-size:12px;color:#6b5a40;margin-top:10px}
+.route{display:flex;flex-wrap:wrap;gap:4px 2px;align-items:center;margin:4px 0 2px;font-size:12px}
+.route span{padding:3px 7px;border-radius:2px;border:1px solid #b9a37a;color:#6b5a40;white-space:nowrap}
+.route span.done{background:#2b2419;color:#ecdfc2;border-color:#2b2419;text-decoration:line-through;text-decoration-color:rgba(236,223,194,.5)}
+.route span.now{background:#9a2a20;color:#f6ead0;border-color:#9a2a20;font-weight:700}
+.route i{color:#8a7552;font-style:normal;padding:0 2px}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 </style>
 
@@ -173,7 +178,7 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
   <div class="sheet">
     <div class="seal">군령</div>
     <h1>철기 공성전</h1>
-    <p class="lede">삼국이 다투던 시절, 당신은 신라의 장수입니다. 먼저 백제를, 다음은 고구려를, 마지막에는 당나라 대군을 상대해야 합니다. 성에서 병사가 끊임없이 나오고, 병사들은 알아서 거점을 향해 몰려갑니다. 하지만 장수 곁에 있는 병사는 당신을 따라 움직이고 사기가 올라 더 세게 싸웁니다. 병력을 모아 거점을 빼앗고 적의 성을 무너뜨리세요. 장이 넘어갈수록 적은 강해집니다.</p>
+    <p class="lede">삼국이 다투던 시절, 당신은 신라의 장수입니다. 백제와 고구려를 넘고, 당나라를 지나 초원과 사막, 동로마와 유럽, 북쪽 바다의 바이킹, 그리고 바다 건너 아메리카까지 원정합니다. 성에서 병사가 끊임없이 나오고, 병사들은 알아서 거점을 향해 몰려갑니다. 하지만 장수 곁에 있는 병사는 당신을 따라 움직이고 사기가 올라 더 세게 싸웁니다. 병력을 모아 거점을 빼앗고 적의 성을 무너뜨리세요. 장이 넘어갈수록 적은 강해집니다.</p>
     <div class="controls" id="ctrlList">
       <div><kbd>WASD·방향키</kbd> 이동</div>
       <div><kbd>Space·클릭</kbd> 칼 베기 (마우스 방향)</div>
@@ -184,6 +189,7 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
       <div><kbd>P·Esc</kbd> 일시정지</div>
     </div>
     <div class="rule"></div>
+    <div class="route" id="routeT"></div>
     <div class="btns">
       <button class="btn" id="btnStart">출전</button>
       <button class="btn alt" id="btnShopT">정비하기</button>
@@ -198,6 +204,7 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
   <div class="sheet">
     <div class="seal" id="shopSeal">정비</div>
     <h2 id="shopTitle">군영 정비</h2>
+    <div class="route" id="routeS"></div>
     <div class="goldline num" id="shopGold">0</div>
     <div class="shop" id="shopList"></div>
     <div class="btns"><button class="btn" id="btnNext">출전</button><button class="btn ghost" id="btnShopBack">군령서로</button></div>
@@ -244,7 +251,7 @@ const COL = {
 
 /* ---------------- Save ---------------- */
 const SAVE_KEY = 'cheolgi-siege-v1';
-function defaultSave() { return { stage: 1, gold: 0, best: 1, sound: true, up: { hp: 0, atk: 0, command: 0, barracks: 0, drill: 0, spear: 0, archer: 0, knight: 0 } }; }
+function defaultSave() { return { stage: 1, gold: 0, best: 1, sound: true, up: { hp: 0, atk: 0, horse: 0, medic: 0, command: 0, barracks: 0, drill: 0, spear: 0, archer: 0, knight: 0 } }; }
 let save = defaultSave();
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY));
@@ -253,26 +260,52 @@ try {
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } }
 
 const UPGRADES = [
-  { k: 'hp', name: '영웅 갑옷', desc: '영웅 최대 체력 +25%', max: 8, cost: l => 60 + l * 55 },
-  { k: 'atk', name: '명검 단련', desc: '영웅 공격력 +20%', max: 8, cost: l => 60 + l * 55 },
-  { k: 'command', name: '지휘력', desc: '따라오는 범위 +15%, 병력 상한 +6', max: 6, cost: l => 80 + l * 70 },
-  { k: 'barracks', name: '병영 증축', desc: '성의 병사 생산 속도 +12%', max: 6, cost: l => 70 + l * 65 },
-  { k: 'drill', name: '병사 훈련', desc: '아군 병사 체력 +12%, 공격력 +8%', max: 8, cost: l => 70 + l * 60 },
+  { k: 'hp', name: '영웅 갑옷', desc: '영웅 최대 체력 +25%', max: 14, cost: l => 60 + l * 55 + l * l * 6 },
+  { k: 'atk', name: '명검 단련', desc: '영웅 공격력 +20%', max: 14, cost: l => 60 + l * 55 + l * l * 6 },
+  { k: 'horse', name: '명마', desc: '영웅 이동 속도 +6%', max: 5, cost: l => 120 + l * 90 },
+  { k: 'medic', name: '군의관', desc: '영웅 체력 회복 +50%', max: 4, cost: l => 110 + l * 100 },
+  { k: 'command', name: '지휘력', desc: '따라오는 범위 +15%, 병력 상한 +6', max: 10, cost: l => 80 + l * 70 + l * l * 8 },
+  { k: 'barracks', name: '병영 증축', desc: '성의 병사 생산 속도 +12%', max: 8, cost: l => 70 + l * 65 + l * l * 8 },
+  { k: 'drill', name: '병사 훈련', desc: '아군 병사 체력 +12%, 공격력 +8%', max: 16, cost: l => 70 + l * 60 + l * l * 6 },
   { k: 'spear', name: '창병 징집', desc: '긴 창으로 먼저 찌름. 기병에게 2.5배 피해', max: 1, cost: () => 90 },
   { k: 'archer', name: '궁수 징집', desc: '멀리서 화살을 쏨. 공성에 유용', max: 1, cost: () => 130 },
   { k: 'knight', name: '기병대 창설', desc: '갑옷 입힌 말을 탄 빠르고 단단한 기병', max: 1, cost: () => 220 },
 ];
 
-const STAGE_NAMES = ['국경 초소', '갈대 평원', '붉은 고개', '늑대 숲', '강철 요새', '잿빛 협곡', '왕의 들판', '마지막 성벽'];
 const GENERAL_NAMES = ['진무', '해루', '사오', '목간', '흑궁', '설한'];
-const FACTIONS = {
-  silla:   { name: '신라',   mark: '羅', cloth: '#a8281f', clothD: '#521009', clothL: '#f2907f', trim: '#d4a94a', helm: 'plume' },
-  baekje:  { name: '백제',   mark: '濟', cloth: '#2b5590', clothD: '#11284a', clothL: '#93b6ec', trim: '#cfc6a8', helm: 'tassel' },
-  goguryeo:{ name: '고구려', mark: '麗', cloth: '#2c7058', clothD: '#0f3527', clothL: '#8fdcbc', trim: '#c08f3a', helm: 'feathers' },
-  tang:    { name: '당',     mark: '唐', cloth: '#c39522', clothD: '#56400c', clothL: '#f5d77c', trim: '#2a1a10', helm: 'round' },
+const REGIONS = {
+  korea:   { base: '#5b653a', greens: ['#56603a', '#626b3f', '#6d7046', '#4d5833', '#77744c', '#6a6142'], trees: 1, tree: ['#2c4d25', '#3c6a31'], lake: '#2c5a78' },
+  china:   { base: '#77704a', greens: ['#7a714a', '#857b52', '#6e6a44', '#8a7f55', '#706640', '#7d7550'], trees: 0.8, tree: ['#3a4d2a', '#4d6236'], lake: '#4a6a6a' },
+  steppe:  { base: '#8a8a55', greens: ['#8f8d5a', '#9a9660', '#82824f', '#a3a068', '#7c7a4a', '#959059'], trees: 0.3, tree: ['#4a5a30', '#5f7040'], lake: '#4f7f8f' },
+  desert:  { base: '#c2a46a', greens: ['#c9ab70', '#d4b87d', '#b8985f', '#cfb176', '#bd9e64', '#d8bf86'], trees: 0.15, tree: ['#4f6a2a', '#6f8a3a'], lake: '#3f8a9a' },
+  medit:   { base: '#8f8a58', greens: ['#958f5c', '#a09862', '#868250', '#9c9460', '#8a854f', '#a59d68'], trees: 0.6, tree: ['#3f5230', '#56683e'], lake: '#2f6f9a' },
+  europe:  { base: '#4f6a34', greens: ['#4c6632', '#58753a', '#466030', '#5f7c40', '#52703a', '#4a6430'], trees: 1.4, tree: ['#24401f', '#335a2a'], lake: '#2c5a70' },
+  north:   { base: '#d3d8dc', greens: ['#cfd5d9', '#e4e8ea', '#c3cacf', '#dde2e5', '#b9c1c7', '#eef1f2'], trees: 1.1, tree: ['#1f3a2c', '#2d5040'], snow: true, lake: '#8fb0c4' },
+  prairie: { base: '#8c8a4c', greens: ['#92904f', '#9e9a58', '#858345', '#a6a25e', '#7d7b42', '#989450'], trees: 0.5, tree: ['#34502a', '#4a6a36'], lake: '#3a6f8f' },
 };
+const FACTIONS = {
+  silla:    { name: '신라',     mark: '羅', cloth: '#a8281f', clothD: '#521009', clothL: '#f2907f', trim: '#d4a94a', helm: 'plume' },
+  baekje:   { name: '백제',     mark: '濟', cloth: '#2b5590', clothD: '#11284a', clothL: '#93b6ec', trim: '#cfc6a8', helm: 'tassel', region: 'korea', places: ['국경 초소', '사비성 가는 길'] },
+  goguryeo: { name: '고구려',   mark: '麗', cloth: '#2c7058', clothD: '#0f3527', clothL: '#8fdcbc', trim: '#c08f3a', helm: 'feathers', region: 'korea', places: ['요동 벌판', '평양성 외곽'] },
+  tang:     { name: '당',       mark: '唐', cloth: '#c39522', clothD: '#56400c', clothL: '#f5d77c', trim: '#2a1a10', helm: 'round', region: 'china', places: ['황하 나루', '장안 성문'] },
+  turk:     { name: '돌궐',     mark: '突', cloth: '#8a5a2b', clothD: '#3e2610', clothL: '#e8b884', trim: '#d9c08a', helm: 'fur', region: 'steppe', places: ['초원의 바람', '천산 고개'], weights: { knight: 6, archer: 4 } },
+  persia:   { name: '페르시아', mark: '波', cloth: '#1f7a7a', clothD: '#0a3434', clothL: '#86e0dc', trim: '#e0c060', helm: 'turban', region: 'desert', places: ['모래 폭풍', '크테시폰'], weights: { archer: 6 } },
+  rome:     { name: '동로마',   mark: '拂', cloth: '#6a2f8a', clothD: '#2c0f3c', clothL: '#d0a0ec', trim: '#e4c25a', helm: 'crest', region: 'medit', places: ['아나톨리아', '콘스탄티노폴리스'], weights: { spear: 6 } },
+  frank:    { name: '프랑크',   mark: '佛', cloth: '#2d4fa0', clothD: '#11214a', clothL: '#a8c0f4', trim: '#f0e0b0', helm: 'nasal', region: 'europe', places: ['라인 강', '파리 성벽'], weights: { knight: 5 }, cross: true },
+  viking:   { name: '바이킹',   mark: '北', cloth: '#4e6070', clothD: '#1e2830', clothL: '#b8cad8', trim: '#c8a060', helm: 'viking', region: 'north', places: ['얼어붙은 피오르', '북해의 끝'], weights: { sword: 7 }, beard: true },
+  america:  { name: '아메리카', mark: '美', cloth: '#1d3a6e', clothD: '#0a1a36', clothL: '#a8c4f0', trim: '#f2f2f2', helm: 'tricorne', region: 'prairie', places: ['신대륙 해안', '대평원'], weights: { archer: 5, knight: 3 } },
+};
+const CAMPAIGN = ['baekje', 'goguryeo', 'tang', 'turk', 'persia', 'rome', 'frank', 'viking', 'america'];
 const PLAYER_FACTION = FACTIONS.silla;
-function enemyFaction(s) { return s <= 2 ? FACTIONS.baekje : s <= 4 ? FACTIONS.goguryeo : FACTIONS.tang; }
+function enemyFaction(s) {
+  const i = Math.floor((s - 1) / 2);
+  return FACTIONS[CAMPAIGN[i < CAMPAIGN.length ? i : (i - CAMPAIGN.length) % CAMPAIGN.length]];
+}
+function stageName(s) {
+  const F = enemyFaction(s), i = Math.floor((s - 1) / 2);
+  if (i >= CAMPAIGN.length) return `${s}장 · 끝없는 원정 (${F.name})`;
+  return `${s}장 · ${F.places[(s - 1) % 2]}`;
+}
 let FAC_US = FACTIONS.silla, FAC_THEM = FACTIONS.baekje;
 function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
 function applyFactions(stage) {
@@ -283,15 +316,14 @@ function applyFactions(stage) {
   r.setProperty('--us', FAC_US.cloth); r.setProperty('--us-l', FAC_US.clothL);
   r.setProperty('--them', FAC_THEM.cloth); r.setProperty('--them-l', FAC_THEM.clothL);
 }
-function stageName(s) { return `${s}장 · ${STAGE_NAMES[s - 1] || '끝없는 전장'}`; }
 
 /* ---------------- Balance ---------------- */
 function DIFF(s) {
   return {
     eSpawn: Math.max(2.2, 7.4 - 0.5 * (s - 1)),
     eMult: 1 + 0.13 * (s - 1),
-    eCap: 30 + 7 * s,
-    eTypes: ['sword', ...(s >= 2 ? ['spear'] : []), ...(s >= 3 ? ['archer'] : []), ...(s >= 5 ? ['knight'] : [])],
+    eCap: Math.min(120, 30 + 7 * s),
+    eTypes: ['sword', ...(s >= 2 ? ['spear'] : []), ...(s >= 3 || (enemyFaction(s).weights || {}).archer ? ['archer'] : []), ...(s >= 5 || (enemyFaction(s).weights || {}).knight ? ['knight'] : [])],
     towers: Math.min(5, Math.floor(s / 2)),
     general: s >= 3,
     castleHp: 1400 + 450 * (s - 1),
@@ -304,7 +336,7 @@ function DIFF(s) {
 function PLAYER() {
   const u = save.up;
   return {
-    heroHp: 320 * (1 + 0.25 * u.hp), heroAtk: 30 * (1 + 0.2 * u.atk),
+    heroHp: 320 * (1 + 0.25 * u.hp), heroAtk: 30 * (1 + 0.2 * u.atk), heroSpd: 140 * (1 + 0.06 * (u.horse || 0)), regen: 1 + 0.5 * (u.medic || 0),
     followR: 230 * (1 + 0.15 * u.command), cap: 36 + 6 * u.command,
     spawn: 5.4 * Math.pow(0.88, u.barracks), hpM: 1 + 0.12 * u.drill, atkM: 1 + 0.08 * u.drill,
     types: ['sword', ...(u.spear ? ['spear'] : []), ...(u.archer ? ['archer'] : []), ...(u.knight ? ['knight'] : [])],
@@ -316,9 +348,10 @@ const TYPES = {
   archer: { hp: 40, atk: 7, reach: 230, cd: 1.7, spd: 66, r: 8, aggro: 260, w: 3, gold: 4, ranged: true },
   knight: { hp: 140, atk: 15, reach: 11, cd: 1.0, spd: 116, r: 12, aggro: 230, w: 2, gold: 6 },
 };
-function pickType(list) {
-  let tot = 0; for (const t of list) tot += TYPES[t].w;
-  let r = R() * tot; for (const t of list) { r -= TYPES[t].w; if (r <= 0) return t; }
+function pickType(list, wts) {
+  const W = t => (wts && wts[t]) || TYPES[t].w;
+  let tot = 0; for (const t of list) tot += W(t);
+  let r = R() * tot; for (const t of list) { r -= W(t); if (r <= 0) return t; }
   return list[0];
 }
 
@@ -424,7 +457,8 @@ function newBattle(stage) {
     if (!okPos(x, y, r) || G.obst.some(o => hyp(o.x - x, o.y - y) < o.r + r + 160)) continue;
     G.obst.push({ kind: 'lake', x, y, r }); i++;
   }
-  for (let c = 0; c < 14; c++) {
+  const nClusters = Math.round(14 * REGIONS[enemyFaction(stage).region].trees);
+  for (let c = 0; c < nClusters; c++) {
     const cx = 500 + rng() * (MAPW - 1000), cy = 100 + rng() * (MAPH - 200);
     const n = 5 + Math.floor(rng() * 8);
     for (let k = 0; k < n; k++) {
@@ -445,11 +479,11 @@ function newBattle(stage) {
   G.units.push(G.hero);
   for (let i = 0; i < 10; i++) spawnUnit(0, i < 7 || !p.types[1] ? 'sword' : p.types[1 + (i % (p.types.length - 1))], G.pc.x + 110 + R() * 90, G.pc.y + (R() - 0.5) * 160);
   for (let i = 0; i < d.startArmy; i++) {
-    const u = spawnUnit(1, pickType(d.eTypes), G.ec.x - 170 - R() * 80, G.ec.y + (R() - 0.5) * 180);
+    const u = spawnUnit(1, pickType(d.eTypes, enemyFaction(stage).weights), G.ec.x - 170 - R() * 80, G.ec.y + (R() - 0.5) * 180);
     u.role = 'rally';
   }
   for (const s of ops) if (s.team === 1) for (let i = 0; i < 3; i++) {
-    const u = spawnUnit(1, pickType(d.eTypes), s.x + (R() - 0.5) * 60, s.y + (R() - 0.5) * 60);
+    const u = spawnUnit(1, pickType(d.eTypes, enemyFaction(stage).weights), s.x + (R() - 0.5) * 60, s.y + (R() - 0.5) * 60);
     u.role = 'guard'; u.home = s;
   }
   if (d.general) spawnGeneral();
@@ -495,7 +529,7 @@ function makeHero(x, y) {
   const p = G.p;
   return {
     id: G.nid++, team: 0, type: 'hero', hero: true, x, y, vx: 0, vy: 0, r: 13, hp: p.heroHp, maxHp: p.heroHp, atk: p.heroAtk, reach: 46,
-    cd: 0, cdMax: 0.42, spd: 140, face: 0, mdir: 0, swing: 0, swingDir: 1, alive: true, dashT: 0, dashCd: 0, shoutCd: 0, rallyCd: 0,
+    cd: 0, cdMax: 0.42, spd: p.heroSpd, face: 0, mdir: 0, swing: 0, swingDir: 1, alive: true, dashT: 0, dashCd: 0, shoutCd: 0, rallyCd: 0,
     hitFlash: 0, lastHurt: -9, rage: 0, stun: 0, inv: 1.2
   };
 }
@@ -517,8 +551,9 @@ function buildGround(rng) {
   const c = groundCanvas || document.createElement('canvas');
   c.width = W; c.height = H; groundCanvas = c;
   const g = c.getContext('2d');
-  g.fillStyle = '#5b653a'; g.fillRect(0, 0, W, H);
-  const greens = ['#56603a', '#626b3f', '#6d7046', '#4d5833', '#77744c', '#6a6142'];
+  const RG = REGIONS[enemyFaction(G.stage).region];
+  g.fillStyle = RG.base; g.fillRect(0, 0, W, H);
+  const greens = RG.greens;
   for (let i = 0; i < 1400; i++) {
     g.globalAlpha = 0.25 + rng() * 0.3; g.fillStyle = greens[(rng() * greens.length) | 0];
     g.beginPath(); g.arc(rng() * W, rng() * H, 6 + rng() * 34, 0, TAU); g.fill();
@@ -547,7 +582,7 @@ function buildGround(rng) {
   for (const o of G.obst) if (o.kind === 'lake') {
     g.fillStyle = '#b5a46f'; g.beginPath(); g.arc(o.x * S, o.y * S, (o.r + 12) * S, 0, TAU); g.fill();
     const gr = g.createRadialGradient(o.x * S, o.y * S, 0, o.x * S, o.y * S, o.r * S);
-    gr.addColorStop(0, '#2c5a78'); gr.addColorStop(0.8, '#3a6f8e'); gr.addColorStop(1, '#5d93a8');
+    gr.addColorStop(0, RG.lake); gr.addColorStop(0.8, '#3a6f8e'); gr.addColorStop(1, '#5d93a8');
     g.fillStyle = gr; g.beginPath(); g.arc(o.x * S, o.y * S, o.r * S, 0, TAU); g.fill();
     g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 1.5;
     for (let k = 0; k < 6; k++) { const a = rng() * TAU, rr = rng() * o.r * 0.7; g.beginPath(); g.arc((o.x + Math.cos(a) * rr) * S, (o.y + Math.sin(a) * rr) * S, 6 + rng() * 6, 0.2, 1.2); g.stroke(); }
@@ -976,7 +1011,7 @@ function updateStructs(dt) {
         const cap = s.team === 0 ? G.p.cap : G.d.eCap;
         if (G.count[s.team] < cap) {
           const dir = s.team === 0 ? 1 : -1;
-          const u = spawnUnit(s.team, pickType(s.team === 0 ? G.p.types : G.d.eTypes), s.x + dir * (s.r + 24), s.y + (R() - 0.5) * 70);
+          const u = spawnUnit(s.team, pickType(s.team === 0 ? G.p.types : G.d.eTypes, s.team === 1 ? FAC_THEM.weights : null), s.x + dir * (s.r + 24), s.y + (R() - 0.5) * 70);
           if (s.team === 1) {
             if (G.stage >= 2 && R() < 0.22) {
               u.role = 'guard';
@@ -1015,7 +1050,7 @@ function updateStructs(dt) {
           const cap = s.team === 0 ? G.p.cap : G.d.eCap;
           if (G.count[s.team] < cap) {
             const list = (s.team === 0 ? G.p.types : G.d.eTypes).filter(t => t !== 'knight');
-            const u = spawnUnit(s.team, pickType(list), s.x + (R() - 0.5) * 40, s.y + (R() - 0.5) * 40);
+            const u = spawnUnit(s.team, pickType(list, s.team === 1 ? FAC_THEM.weights : null), s.x + (R() - 0.5) * 40, s.y + (R() - 0.5) * 40);
             if (s.team === 1) {
               let g = 0; for (const o of G.units) if (o.alive && o.team === 1 && o.role === 'guard' && o.home === s) g++;
               if (g < 4) { u.role = 'guard'; u.home = s; } else u.role = 'rally';
@@ -1081,7 +1116,7 @@ function updateHero(dt) {
     }
     swingArc(h);
   }
-  if (G.t - h.lastHurt > 4) h.hp = Math.min(h.maxHp, h.hp + h.maxHp * 0.025 * dt);
+  if (G.t - h.lastHurt > 4) h.hp = Math.min(h.maxHp, h.hp + h.maxHp * 0.025 * G.p.regen * dt);
 }
 
 /* ---------------- Physics ---------------- */
@@ -1381,14 +1416,23 @@ function drawUnit(u) {
   ctx.strokeStyle = 'rgba(0,0,0,.3)';
   for (let xx = -2.4; xx <= 2.5; xx += 2.4) { ctx.beginPath(); ctx.moveTo(xx, -25.5 + y0); ctx.lineTo(xx, -16 + y0); ctx.stroke(); }
   // sash in faction colour + belt
-  ctx.strokeStyle = F.cloth; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(-3.8, -26 + y0); ctx.lineTo(3.8, -17 + y0); ctx.stroke();
+  if (F.helm === 'tricorne') {
+    ctx.fillStyle = F.cloth; ctx.beginPath(); ctx.roundRect(-4.8, -26.6 + y0, 9.6, 11.8, 2); ctx.fill();
+    ctx.strokeStyle = F.trim; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-3.8, -26 + y0); ctx.lineTo(3.8, -17 + y0); ctx.moveTo(3.8, -26 + y0); ctx.lineTo(-3.8, -17 + y0); ctx.stroke();
+    ctx.fillStyle = '#d4b04a'; for (const yy of [-24, -21.5, -19]) { ctx.beginPath(); ctx.arc(2.8, yy + y0, 0.5, 0, TAU); ctx.fill(); }
+  } else if (F.cross) {
+    ctx.fillStyle = '#efe6cc'; ctx.fillRect(-4.4, -25.5 + y0, 8.8, 9.5);
+    ctx.fillStyle = F.cloth; ctx.fillRect(-0.9, -25 + y0, 1.8, 8.5); ctx.fillRect(-3.6, -22.5 + y0, 7.2, 1.8);
+  } else {
+    ctx.strokeStyle = F.cloth; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(-3.8, -26 + y0); ctx.lineTo(3.8, -17 + y0); ctx.stroke();
+  }
   ctx.fillStyle = F.trim; ctx.fillRect(-4.8, -16 + y0, 9.6, 1.6);
   // neck guard scarf
   ctx.fillStyle = F.cloth; ctx.fillRect(-2.4, -27.8 + y0, 4.8, 1.8);
   // head
   ctx.fillStyle = '#d6ad86'; ctx.beginPath(); ctx.arc(0.7, -30 + y0, 3.1, 0, TAU); ctx.fill();
   ctx.fillStyle = '#141010'; ctx.fillRect(2.4, -30.6 + y0, 1, 1);
-  if (u.hero) { ctx.fillStyle = '#1c1612'; ctx.beginPath(); ctx.moveTo(-0.5, -29 + y0); ctx.quadraticCurveTo(1.5, -24.5 + y0, 3.8, -28.2 + y0); ctx.lineTo(3.4, -29 + y0); ctx.quadraticCurveTo(1.5, -27.5 + y0, -0.5, -29 + y0); ctx.fill(); }
+  if (u.hero || F.beard) { ctx.fillStyle = F.beard && !u.hero ? '#b07a3a' : '#1c1612'; ctx.beginPath(); ctx.moveTo(-0.5, -29 + y0); ctx.quadraticCurveTo(1.5, -24.5 + y0, 3.8, -28.2 + y0); ctx.lineTo(3.4, -29 + y0); ctx.quadraticCurveTo(1.5, -27.5 + y0, -0.5, -29 + y0); ctx.fill(); }
   drawHelmet(F, u, y0, iron, ironD, myHero);
   // weapon arm
   const hx = 4.2, hy = -19 + y0;
@@ -1455,6 +1499,48 @@ function drawHelmet(F, u, y0, iron, ironD, myHero) {
   const helmD = myHero ? '#6e5420' : u.general ? '#000' : '#34373b';
   const hy = -30.6 + y0;
   ctx.fillStyle = helm; ctx.strokeStyle = helmD; ctx.lineWidth = 0.7;
+  if (F.helm === 'fur') {
+    ctx.fillStyle = '#6b4a2a'; ctx.beginPath(); ctx.ellipse(0.7, hy - 1.5, 4.6, 3.6, 0, Math.PI, TAU); ctx.fill();
+    ctx.fillStyle = '#c9b48a'; ctx.beginPath(); ctx.roundRect(-4, hy - 1.5, 9.4, 2.4, 1.2); ctx.fill();
+    ctx.fillRect(-4.4, hy - 0.5, 2.2, 5);
+    ctx.fillStyle = myHero ? '#c9a24a' : '#8a6a3a'; ctx.beginPath(); ctx.arc(0.7, hy - 5, 1.2, 0, TAU); ctx.fill();
+    return;
+  }
+  if (F.helm === 'turban') {
+    ctx.fillStyle = '#f0ead8'; ctx.strokeStyle = '#b8ae94'; ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.ellipse(0.7, hy - 1.8, 4.6, 3.4, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-3.5, hy - 2.6); ctx.quadraticCurveTo(0.7, hy - 0.5, 5, hy - 3); ctx.stroke();
+    ctx.fillStyle = helm; ctx.beginPath(); ctx.moveTo(-0.6, hy - 4.8); ctx.lineTo(0.7, hy - 8); ctx.lineTo(2, hy - 4.8); ctx.fill();
+    ctx.fillStyle = 'rgba(150,155,160,.9)'; ctx.fillRect(-4, hy + 0.5, 2.6, 4.5);
+    ctx.fillStyle = F.trim; ctx.beginPath(); ctx.arc(3.8, hy - 2, 0.9, 0, TAU); ctx.fill();
+    return;
+  }
+  if (F.helm === 'crest') {
+    ctx.beginPath(); ctx.arc(0.7, hy, 4, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillRect(-3.8, hy, 2.2, 4); ctx.fillRect(3, hy, 1.6, 3);
+    ctx.fillStyle = myHero ? '#d8261b' : F.cloth;
+    ctx.beginPath(); ctx.moveTo(-4.5, hy - 2); ctx.quadraticCurveTo(0.7, hy - 9.5, 5.5, hy - 3); ctx.quadraticCurveTo(0.7, hy - 6.5, -4.5, hy - 2); ctx.fill();
+    return;
+  }
+  if (F.helm === 'nasal') {
+    ctx.beginPath(); ctx.moveTo(-3.4, hy + 0.4); ctx.quadraticCurveTo(-2.6, hy - 5, 0.7, hy - 7.5); ctx.quadraticCurveTo(4, hy - 5, 4.8, hy + 0.4); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = helmD; ctx.fillRect(3.4, hy - 0.2, 1.2, 3.4);
+    ctx.fillStyle = '#7d8288'; ctx.fillRect(-4, hy, 2.2, 5.5);
+    return;
+  }
+  if (F.helm === 'viking') {
+    ctx.beginPath(); ctx.arc(0.7, hy - 0.3, 4.1, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = helmD; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(0.7, hy - 4.3); ctx.lineTo(0.7, hy); ctx.moveTo(-3.3, hy - 0.4); ctx.lineTo(4.7, hy - 0.4); ctx.stroke();
+    ctx.beginPath(); ctx.arc(3.3, hy + 0.8, 1.1, 0, TAU); ctx.stroke();
+    return;
+  }
+  if (F.helm === 'tricorne') {
+    ctx.fillStyle = myHero ? '#3a2a10' : '#14161c';
+    ctx.beginPath(); ctx.moveTo(-5.2, hy); ctx.quadraticCurveTo(0.7, hy - 2.5, 6.2, hy); ctx.lineTo(4.4, hy - 3.6); ctx.quadraticCurveTo(0.7, hy - 6.4, -3.6, hy - 3.6); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = myHero ? '#e8c060' : F.trim; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(-5.2, hy); ctx.quadraticCurveTo(0.7, hy - 2.5, 6.2, hy); ctx.stroke();
+    ctx.fillStyle = '#e8e4da'; ctx.fillRect(-3.8, hy, 1.8, 2.6);
+    return;
+  }
   if (F.helm === 'round') {
     ctx.beginPath(); ctx.arc(0.7, hy, 3.8, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillRect(-4, hy, 2.4, 4); ctx.fillRect(-3.5, hy - 0.3, 8.8, 1.2);
@@ -1516,9 +1602,11 @@ function drawTree(o) {
   const near = G.hero.alive && hyp(G.hero.x - o.x, G.hero.y - o.y) < o.r + 30;
   ctx.globalAlpha = near ? 0.45 : 1;
   ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(o.x + 5, o.y + 6, o.r * 1.1, o.r * 0.8, 0, 0, TAU); ctx.fill();
-  ctx.fillStyle = o.s > 0.5 ? '#2c4d25' : '#335a2a'; ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 1.12, 0, TAU); ctx.fill();
-  ctx.fillStyle = o.s > 0.5 ? '#3c6a31' : '#467536'; ctx.beginPath(); ctx.arc(o.x - o.r * 0.25, o.y - o.r * 0.3, o.r * 0.7, 0, TAU); ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,220,.08)'; ctx.beginPath(); ctx.arc(o.x - o.r * 0.4, o.y - o.r * 0.45, o.r * 0.35, 0, TAU); ctx.fill();
+  const RG = REGIONS[FAC_THEM.region] || REGIONS.korea;
+  ctx.fillStyle = RG.tree[0]; ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 1.12, 0, TAU); ctx.fill();
+  ctx.fillStyle = RG.tree[1]; ctx.beginPath(); ctx.arc(o.x - o.r * 0.25, o.y - o.r * 0.3, o.r * 0.7, 0, TAU); ctx.fill();
+  if (RG.snow) { ctx.fillStyle = 'rgba(245,248,250,.85)'; ctx.beginPath(); ctx.arc(o.x - o.r * 0.35, o.y - o.r * 0.4, o.r * 0.45, 0, TAU); ctx.fill(); }
+  else { ctx.fillStyle = 'rgba(255,255,220,.08)'; ctx.beginPath(); ctx.arc(o.x - o.r * 0.4, o.y - o.r * 0.45, o.r * 0.35, 0, TAU); ctx.fill(); }
   ctx.globalAlpha = 1;
 }
 function hpBar(x, y, w, frac, team) {
@@ -1707,10 +1795,23 @@ function renderCtrlLists() {
   const build = el => { el.innerHTML = ''; for (const [k, v] of html) { const d = document.createElement('div'); const kb = document.createElement('kbd'); kb.textContent = k; d.appendChild(kb); d.appendChild(document.createTextNode(' ' + v)); el.appendChild(d); } };
   build($('#ctrlList')); build($('#ctrlList2'));
 }
+function renderRoute(el) {
+  el.innerHTML = '';
+  const cur = Math.floor((save.stage - 1) / 2);
+  const home = document.createElement('span'); home.className = 'done'; home.textContent = '서라벌'; el.appendChild(home);
+  CAMPAIGN.forEach((k, i) => {
+    const ar = document.createElement('i'); ar.textContent = '→'; el.appendChild(ar);
+    const sp = document.createElement('span'); sp.textContent = FACTIONS[k].name;
+    if (i < cur) sp.className = 'done'; else if (i === cur) sp.className = 'now';
+    el.appendChild(sp);
+  });
+  if (cur >= CAMPAIGN.length) { const ar = document.createElement('i'); ar.textContent = '→'; el.appendChild(ar); const sp = document.createElement('span'); sp.className = 'now'; sp.textContent = '천하통일 · 끝없는 원정'; el.appendChild(sp); }
+}
 function toTitle() {
   state = 'title';
   newBattle(save.stage); G.attract = true;
   $('#btnStart').textContent = save.stage > 1 ? `${save.stage}장 출전` : '출전';
+  renderRoute($('#routeT'));
   $('#btnShopT').hidden = save.gold <= 0 && save.stage <= 1;
   $('#titleHint').textContent = save.stage > 1 ? `최고 기록 ${save.best}장 · 보유 금화 ${save.gold}` : '진행 상황은 이 브라우저에 저장됩니다.';
   $('#btnSound').textContent = `소리: ${save.sound ? '켬' : '끔'}`;
@@ -1732,6 +1833,7 @@ function openShop() {
   $('#shopTitle').textContent = '군영 정비';
   $('#shopSeal').textContent = `다음: ${stageName(save.stage)}`;
   $('#btnNext').textContent = `${save.stage}장 출전`;
+  renderRoute($('#routeS'));
   renderShop(); showScreen('shop');
 }
 function renderShop() {
@@ -1761,7 +1863,7 @@ function showResult() {
   $('#resSeal').textContent = win ? '승전보' : '패전보';
   $('#resTitle').textContent = win ? `${stageName(G.stage)} 승리` : `${stageName(G.stage)} 패배`;
   $('#resText').textContent = win
-    ? `적의 성이 무너졌습니다. 다음 전장은 ${stageName(G.stage + 1)}입니다. 적은 더 빨리 병사를 뽑고 더 단단해집니다.`
+    ? (G.stage === CAMPAIGN.length * 2 ? '아메리카의 마지막 성까지 무너뜨렸습니다. 천하통일입니다! 이제부터는 더 강해진 적들과 끝없는 원정이 이어집니다.' : `적의 성이 무너졌습니다. 다음 전장은 ${stageName(G.stage + 1)}, 상대는 ${enemyFaction(G.stage + 1).name}입니다. 적은 더 빨리 병사를 뽑고 더 단단해집니다.`)
     : '우리 성이 함락되었습니다. 전리품의 절반을 챙겨 물러났습니다. 군영을 정비하고 다시 도전하세요. 장수 곁에 병력을 모아 한 곳을 확실히 무너뜨리는 것이 핵심입니다.';
   const st = $('#resStats'); st.innerHTML = '';
   const m = Math.floor(G.t / 60), s = Math.floor(G.t % 60);
