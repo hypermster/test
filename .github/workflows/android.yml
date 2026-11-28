@@ -33,11 +33,7 @@ jobs:
       - name: Bundle the game into the app
         run: |
           mkdir -p android/app/src/main/assets
-          {
-            printf '%s\n' '<!doctype html>' '<html lang="ko">' '<head>' '<meta charset="utf-8">' \
-              '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">'
-            cat siege/index.html
-          } > android/app/src/main/assets/index.html
+          cp siege/index.html android/app/src/main/assets/index.html
 
       - name: Build APK
         working-directory: android
