@@ -104,6 +104,34 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
   .side b{font-size:18px}
 }
 
+/* ---------- Portrait phones: two compact HUD rows on top, thumb controls at the bottom ---------- */
+@media (orientation:portrait) and (max-width:700px){
+  .top{display:grid;grid-template-columns:1fr auto;grid-template-areas:"hero right" "war war";gap:6px;padding-top:calc(env(safe-area-inset-top,0px) + 8px)}
+  .hero-card{grid-area:hero;min-width:0;padding:6px 9px}
+  .hero-card .stage{font-size:13px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hero-card .meta{margin-top:2px}
+  .right{grid-area:right}
+  .right .gold{padding:6px 8px;font-size:16px}
+  .iconbtn{width:38px;height:38px}
+  .war{grid-area:war;grid-template-columns:auto 1fr auto;gap:10px;padding:5px 12px}
+  .side{display:flex;align-items:baseline;gap:5px}
+  .side b{font-size:20px}
+  .castles{gap:4px}
+  .castles label{display:none}
+  body.touch #minimap{top:calc(env(safe-area-inset-top,0px) + 118px);right:max(10px,env(safe-area-inset-right,0px));width:120px;height:80px}
+  body.touch .skills{right:max(10px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 18px);
+    grid-template-columns:repeat(3,58px);grid-template-areas:"stance rally ." "shout dash ." ". . attack";gap:8px}
+  body.touch .sk{width:58px;height:58px}
+  body.touch .sk[data-k="attack"]{width:88px;height:88px;margin:-30px 0 0 -30px}
+  body.touch .sk[data-k="shout"]{margin-top:-6px}
+  body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 230px);font-size:13px}
+  #banner{top:30%}
+  #respawn{top:45%}
+}
+.iconbtn.full{display:grid;place-items:center;padding:0}
+.iconbtn.full svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round}
+.iconbtn.full[hidden]{display:none}
+
 /* ---------- Menus ---------- */
 .screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:auto;
   background:radial-gradient(ellipse at center,rgba(22,19,15,.55),rgba(22,19,15,.92));
@@ -148,13 +176,6 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
 .route i{color:#8a7552;font-style:normal;padding:0 2px}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 
-/* phones held upright: ask to rotate (both games are landscape) */
-#rotate{display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;
-  background:#16130f;color:#f3e6c8;font:600 18px/1.5 system-ui,-apple-system,sans-serif;padding:24px}
-#rotate i{width:46px;height:78px;border:4px solid currentColor;border-radius:10px;animation:rot 1.8s ease-in-out infinite}
-@keyframes rot{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
-@media (orientation:portrait) and (max-width:700px){#rotate{display:flex}}
-@media (prefers-reduced-motion:reduce){#rotate i{animation:none;transform:rotate(-90deg)}}
 </style>
 
 <canvas id="game"></canvas>
@@ -178,6 +199,7 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
     </div>
     <div class="right">
       <div class="card gold num" id="hGold">0</div>
+      <button class="iconbtn full" id="btnFull" aria-label="전체 화면" hidden></button>
       <button class="iconbtn" id="btnPause" aria-label="일시정지">II</button>
     </div>
   </div>
@@ -219,6 +241,7 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
       <button class="btn ghost size-btn">인물 크기: 보통</button>
     </div>
     <div class="hint" id="titleHint"></div>
+    <div class="hint" id="iosHint" hidden>전체 화면으로 하려면 Safari 아래쪽 공유 버튼을 누르고 「홈 화면에 추가」를 고른 뒤, 홈 화면 아이콘으로 실행하세요. 가로·세로 모두 됩니다.</div>
   </div>
 </div>
 
@@ -252,7 +275,6 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
   </div>
 </div>
 
-<div id="rotate"><i></i><div>화면을 가로로 돌려 주세요</div></div>
 
 <script>
 'use strict';
@@ -1256,7 +1278,7 @@ function resize() {
   cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR);
   cv.style.width = VW + 'px'; cv.style.height = VH + 'px';
   SPR.clear();
-  const base = Math.min(VW, VH) < 520 ? 0.68 : Math.min(VW, VH) < 800 ? 0.85 : 1.1;
+  const base = clamp(Math.sqrt(VW * VH) / 900, 0.55, 1.15);
   zoom = base * SIZES[save.size ?? 1].k;
 }
 addEventListener('resize', resize); resize();
@@ -1890,8 +1912,31 @@ function toTitle() {
   bannerEl.innerHTML = '';
   showScreen('title');
 }
+// iPhone Safari has no page fullscreen: point to "Add to Home Screen", which opens full screen in any orientation
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const STANDALONE = navigator.standalone === true || matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
+const CAN_FULLSCREEN = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+if (IS_IOS && !STANDALONE && !CAN_FULLSCREEN) $('#iosHint').hidden = false;
+const fsEl = document.documentElement;
+const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+const installed = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
+function enterFull() {
+  if (isFull() || installed) return;
+  const req = fsEl.requestFullscreen || fsEl.webkitRequestFullscreen;
+  if (!req) return;
+  try { const pr = req.call(fsEl, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => { }); } catch (e) { }
+}
+function exitFull() { const ex = document.exitFullscreen || document.webkitExitFullscreen; if (ex && isFull()) { try { const pr = ex.call(document); if (pr && pr.catch) pr.catch(() => { }); } catch (e) { } } }
+if ((document.fullscreenEnabled || document.webkitFullscreenEnabled) && !installed) $('#btnFull').hidden = false;
+$('#btnFull').addEventListener('click', () => { isFull() ? exitFull() : enterFull(); });
+const ICON_EXPAND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>';
+const ICON_SHRINK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg>';
+$('#btnFull').innerHTML = ICON_EXPAND;
+const syncFull = () => { $('#btnFull').innerHTML = isFull() ? ICON_SHRINK : ICON_EXPAND; $('#btnFull').setAttribute('aria-label', isFull() ? '전체 화면 끄기' : '전체 화면'); setTimeout(resize, 120); };
+document.addEventListener('fullscreenchange', syncFull); document.addEventListener('webkitfullscreenchange', syncFull);
 function startBattle() {
   SFX.init();
+  if (touchMode) enterFull();
   newBattle(save.stage);
   state = 'play'; $('#stanceTxt').textContent = '돌격';
   showScreen(null);
@@ -1991,9 +2036,4 @@ window.__game = { get G() { return G; }, get state() { return state; }, startBat
 if ('serviceWorker' in navigator && location.protocol === 'https:' && window.top === window) {
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { }));
 }
-(function () {
-  const mq = matchMedia('(orientation: portrait) and (max-width: 700px)');
-  const check = () => { if (mq.matches && state === 'play') pause(); };
-  if (mq.addEventListener) mq.addEventListener('change', check); else if (mq.addListener) mq.addListener(check);
-})();
 </script>

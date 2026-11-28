@@ -44,6 +44,10 @@ button:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 .pw{font-family:var(--f-display);font-size:13px;padding:3px 8px;border-radius:12px;background:rgba(0,0,0,.35);border:1.5px solid rgba(255,244,220,.4)}
 .tr{position:absolute;right:max(14px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 10px);display:flex;gap:8px;align-items:center;pointer-events:auto}
 .best{font-family:var(--f-display);font-size:16px;opacity:.9;padding-right:4px}
+.ib.full{display:grid;place-items:center;padding:0}
+.ib.full[hidden]{display:none}
+.ib.full svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round}
+.ios-hint{font-size:14px;background:#f6e7c6;border-radius:12px;padding:8px 12px;margin:0 0 14px}
 .ib{width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,244,220,.55);background:rgba(20,27,51,.55);font-family:var(--f-display);font-size:16px}
 #flash{position:fixed;left:50%;top:30%;transform:translateX(-50%);font-family:var(--f-display);font-size:30px;text-shadow:0 3px 0 rgba(0,0,0,.35);text-align:center;pointer-events:none;white-space:nowrap}
 
@@ -71,13 +75,6 @@ button:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 .peek{position:absolute;right:18px;top:-34px;width:96px;height:64px}
 @media (max-width:420px){.ebar{width:110px}.score{font-size:34px}}
 
-/* phones held upright: ask to rotate (both games are landscape) */
-#rotate{display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;
-  background:#141b33;color:#f3e6c8;font:600 18px/1.5 system-ui,-apple-system,sans-serif;padding:24px}
-#rotate i{width:46px;height:78px;border:4px solid currentColor;border-radius:10px;animation:rot 1.8s ease-in-out infinite}
-@keyframes rot{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
-@media (orientation:portrait) and (max-width:700px){#rotate{display:flex}}
-@media (prefers-reduced-motion:reduce){#rotate i{animation:none;transform:rotate(-90deg)}}
 </style>
 
 <canvas id="c"></canvas>
@@ -91,6 +88,7 @@ button:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
   </div>
   <div class="tr">
     <div class="best num" id="hBest">최고 0</div>
+    <button class="ib full" id="bFull" aria-label="전체 화면" hidden></button>
     <button class="ib" id="bPause" aria-label="일시정지">II</button>
   </div>
   <div id="flash"></div>
@@ -107,6 +105,7 @@ button:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
       <li><b>피하기</b><span>담비, 매, 늘어진 나뭇가지, 가시덤불, 그리고 먼 숲의 번개구름.</span></li>
       <li><b>선물</b><span>깃털 보호막, 열매 자석, 황금 키위(점수 2배)를 노려 보세요.</span></li>
     </ul>
+    <p class="ios-hint" id="iosHint" hidden>전체 화면으로 하려면 Safari 아래쪽 공유 버튼을 누르고 「홈 화면에 추가」를 고른 뒤, 홈 화면 아이콘으로 실행하세요. 가로·세로 모두 됩니다.</p>
     <div class="row"><button class="go" id="bStart">날아오르기</button><button class="link" id="bSound">소리: 켬</button></div>
   </div>
 </div>
@@ -133,7 +132,6 @@ button:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
   </div>
 </div>
 
-<div id="rotate"><i></i><div>화면을 가로로 돌려 주세요</div></div>
 
 <script>
 'use strict';
@@ -152,13 +150,14 @@ function persist() { try { localStorage.setItem(KEY, JSON.stringify(store)); } c
 
 /* ---------- canvas ---------- */
 const cv = $('#c'), ctx = cv.getContext('2d');
-let DPR = 1, SW = 0, SH = 0, K = 1, VW = 960;
+let DPR = 1, SW = 0, SH = 0, K = 1, VW = 960, OY = 0;
 function resize() {
   DPR = Math.min(2, window.devicePixelRatio || 1);
   SW = innerWidth; SH = innerHeight;
   cv.width = Math.round(SW * DPR); cv.height = Math.round(SH * DPR);
   cv.style.width = SW + 'px'; cv.style.height = SH + 'px';
-  K = SH / VH; VW = SW / K;
+  K = Math.min(SH / VH, SW / 640); VW = SW / K;
+  OY = Math.max(0, SH - VH * K); // spare height in portrait goes to extra sky above the field
 }
 addEventListener('resize', resize); resize();
 
@@ -622,7 +621,8 @@ function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   const s = K * DPR;
   const sx = G.shake ? (R() - 0.5) * G.shake : 0, sy = G.shake ? (R() - 0.5) * G.shake : 0;
-  ctx.setTransform(s, 0, 0, s, sx * s, sy * s);
+  ctx.setTransform(s, 0, 0, s, sx * s, (sy * K + OY) * DPR);
+  if (OY > 0) { const sk = skyAt(G.dist); ctx.fillStyle = rgb(sk.a.top, sk.b.top, sk.e); ctx.fillRect(0, -OY / K - 20, VW, OY / K + 22); }
   const sky = drawSky(G.dist);
   drawScenery(sky);
   // night: glow-worms
@@ -661,7 +661,27 @@ function hud() {
 /* ---------- flow ---------- */
 const scr = { title: $('#sTitle'), over: $('#sOver'), pause: $('#sPause') };
 function show(name) { for (const k in scr) scr[k].hidden = k !== name; $('#hud').hidden = !(state === 'play' || state === 'pause'); }
-function start() { SFX.init(); newGame(); state = 'play'; show(null); flash('꽉 누르면 날갯짓!', 1.6); }
+// iPhone Safari has no page fullscreen: point to "Add to Home Screen", which opens full screen in any orientation
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const STANDALONE = navigator.standalone === true || matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
+const CAN_FULLSCREEN = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+if (IS_IOS && !STANDALONE && !CAN_FULLSCREEN) $('#iosHint').hidden = false;
+const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+function enterFull() {
+  if (isFull() || STANDALONE) return;
+  const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req) return;
+  try { const pr = req.call(el, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => { }); } catch (e) { }
+}
+function exitFull() { const ex = document.exitFullscreen || document.webkitExitFullscreen; if (ex && isFull()) { try { const pr = ex.call(document); if (pr && pr.catch) pr.catch(() => { }); } catch (e) { } } }
+const ICON_EXPAND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>';
+const ICON_SHRINK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg>';
+$('#bFull').innerHTML = ICON_EXPAND;
+if (CAN_FULLSCREEN && !STANDALONE) $('#bFull').hidden = false;
+$('#bFull').addEventListener('click', () => { isFull() ? exitFull() : enterFull(); });
+const syncFull = () => { $('#bFull').innerHTML = isFull() ? ICON_SHRINK : ICON_EXPAND; setTimeout(resize, 120); };
+document.addEventListener('fullscreenchange', syncFull); document.addEventListener('webkitfullscreenchange', syncFull);
+function start() { SFX.init(); if (matchMedia('(pointer:coarse)').matches) enterFull(); newGame(); state = 'play'; show(null); flash('꽉 누르면 날갯짓!', 1.6); }
 function pause() { if (state !== 'play') return; state = 'pause'; holding = false; show('pause'); }
 function resume() { if (state !== 'pause') return; state = 'play'; last = performance.now(); show(null); }
 const DEATH_MSG = {
@@ -720,9 +740,4 @@ window.__kiwi = { get G() { return G; }, get state() { return state; }, start, u
 if ('serviceWorker' in navigator && location.protocol === 'https:' && window.top === window) {
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { }));
 }
-(function () {
-  const mq = matchMedia('(orientation: portrait) and (max-width: 700px)');
-  const check = () => { if (mq.matches && state === 'play') pause(); };
-  if (mq.addEventListener) mq.addEventListener('change', check); else if (mq.addListener) mq.addListener(check);
-})();
 </script>

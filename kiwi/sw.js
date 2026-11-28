@@ -1,6 +1,6 @@
 // Offline support for 날아라 키위. The page is fetched network-first so updates
 // arrive as soon as you are online; everything else is served from the cache.
-const CACHE = 'kiwi-v1';
+const CACHE = 'kiwi-v2';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
