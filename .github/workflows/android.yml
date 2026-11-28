@@ -1,0 +1,58 @@
+name: Android APK
+
+on:
+  push:
+    paths:
+      - 'siege/**'
+      - 'android/**'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Bundle the game into the app
+        run: |
+          mkdir -p android/app/src/main/assets
+          cp siege/index.html android/app/src/main/assets/index.html
+
+      - name: Build APK
+        working-directory: android
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Collect APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk cheolgi-siege.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cheolgi-siege-apk
+          path: cheolgi-siege.apk
+
+      - name: Publish as the latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete siege-latest --yes --cleanup-tag || true
+          gh release create siege-latest cheolgi-siege.apk \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "철기 공성전 안드로이드 앱 (최신)" \
+            --notes "태블릿이나 휴대폰에서 cheolgi-siege.apk 를 내려받아 설치하세요. 빌드 ${GITHUB_RUN_NUMBER} · ${GITHUB_SHA::7}"
