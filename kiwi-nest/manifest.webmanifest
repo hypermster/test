@@ -1,0 +1,17 @@
+{
+  "name": "키위 둥지",
+  "short_name": "키위 둥지",
+  "description": "같은 키위를 합쳐 더 귀여운 키위를 만들고, 함께 숲으로 산책을 떠나는 게임",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#fbf3df",
+  "theme_color": "#fbf3df",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
