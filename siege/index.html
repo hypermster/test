@@ -8,6 +8,7 @@
   --ink:#16130f; --iron:#25211b; --iron-2:#332d25; --parch:#ecdfc2; --parch-dim:#b7aa8c;
   --blue:#3d7bd9; --blue-dark:#1d3f78; --red:#cf3f35; --red-dark:#6e1a14; --gold:#e2ad3b;
   --line:rgba(236,223,194,.16);
+  --us:#a8281f; --us-l:#f2907f; --them:#2b5590; --them-l:#93b6ec;
   --f-display:"Black Han Sans","Noto Sans KR",system-ui,sans-serif;
   --f-body:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;
   color-scheme:dark;
@@ -31,15 +32,15 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .bar{position:relative;height:10px;background:#0d0b09;border:1px solid rgba(255,255,255,.12);border-radius:3px;overflow:hidden}
 .bar i{position:absolute;inset:0 auto 0 0;width:100%;background:linear-gradient(#e2584b,#a8322a);transition:width .12s}
 .bar.hp i{background:linear-gradient(#e2c24b,#c28a22)}
-.bar.blue i{background:linear-gradient(#5b95ea,#2f62b4)}
-.bar.red i{background:linear-gradient(#e2584b,#a8322a)}
+.bar.blue i{background:var(--us)}
+.bar.red i{background:var(--them)}
 .bar.sm{height:7px}
 .meta{display:flex;justify-content:space-between;font-size:11px;color:var(--parch-dim);margin-top:4px;gap:8px}
 .war{display:grid;grid-template-columns:auto 120px auto;align-items:center;gap:8px}
 .side{text-align:center;line-height:1}
 .side b{font-family:var(--f-display);font-size:22px;font-weight:400;display:block}
 .side small{font-size:10px;color:var(--parch-dim);letter-spacing:.08em}
-.side.blue b{color:#7fb0f5}.side.red b{color:#f07a6f}
+.side.blue b{color:var(--us-l)}.side.red b{color:var(--them-l)}
 .castles{display:grid;gap:5px}
 .castles label{font-size:9px;color:var(--parch-dim);letter-spacing:.08em;display:flex;justify-content:space-between}
 .right{display:flex;gap:8px;align-items:center;pointer-events:auto}
@@ -57,7 +58,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .sk kbd{font:600 10px var(--f-body);color:var(--parch-dim);position:relative;z-index:1}
 .sk::after{content:"";position:absolute;inset:0;background:conic-gradient(rgba(0,0,0,.68) calc(var(--cd,0)*1turn),transparent 0);pointer-events:none}
 .sk.ready{border-color:rgba(226,173,59,.55)}
-.sk.on{background:rgba(61,123,217,.35)}
+.sk.on{background:rgba(168,40,31,.45)}
 .sk[data-k="stance"] b{font-size:12px}
 
 #banner{position:absolute;left:50%;top:22%;transform:translateX(-50%);text-align:center;pointer-events:none;width:min(92vw,640px)}
@@ -140,7 +141,7 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
       <div class="meta"><span>영웅 체력</span><span class="num" id="hHpTxt">0</span></div>
     </div>
     <div class="card war">
-      <div class="side blue"><b class="num" id="hBlue">0</b><small>고구려</small></div>
+      <div class="side blue"><b class="num" id="hBlue">0</b><small>신라</small></div>
       <div class="castles">
         <label><span>우리 성</span><span class="num" id="hPCt"></span></label>
         <div class="bar sm blue"><i id="hPC"></i></div>
@@ -172,7 +173,7 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
   <div class="sheet">
     <div class="seal">군령</div>
     <h1>철기 공성전</h1>
-    <p class="lede">삼국이 다투던 시절, 당신은 고구려의 장수입니다. 백제와 신라가 번갈아 국경을 넘어옵니다. 성에서 병사가 끊임없이 나오고, 병사들은 알아서 거점을 향해 몰려갑니다. 하지만 장수 곁에 있는 병사는 당신을 따라 움직이고 사기가 올라 더 세게 싸웁니다. 병력을 모아 거점을 빼앗고 적의 성을 무너뜨리세요. 장이 넘어갈수록 적은 강해집니다.</p>
+    <p class="lede">삼국이 다투던 시절, 당신은 신라의 장수입니다. 먼저 백제를, 다음은 고구려를, 마지막에는 당나라 대군을 상대해야 합니다. 성에서 병사가 끊임없이 나오고, 병사들은 알아서 거점을 향해 몰려갑니다. 하지만 장수 곁에 있는 병사는 당신을 따라 움직이고 사기가 올라 더 세게 싸웁니다. 병력을 모아 거점을 빼앗고 적의 성을 무너뜨리세요. 장이 넘어갈수록 적은 강해집니다.</p>
     <div class="controls" id="ctrlList">
       <div><kbd>WASD·방향키</kbd> 이동</div>
       <div><kbd>Space·클릭</kbd> 칼 베기 (마우스 방향)</div>
@@ -257,20 +258,31 @@ const UPGRADES = [
   { k: 'command', name: '지휘력', desc: '따라오는 범위 +15%, 병력 상한 +6', max: 6, cost: l => 80 + l * 70 },
   { k: 'barracks', name: '병영 증축', desc: '성의 병사 생산 속도 +12%', max: 6, cost: l => 70 + l * 65 },
   { k: 'drill', name: '병사 훈련', desc: '아군 병사 체력 +12%, 공격력 +8%', max: 8, cost: l => 70 + l * 60 },
-  { k: 'spear', name: '창병 징집', desc: '긴 창으로 먼저 찌름. 기사에게 2.5배 피해', max: 1, cost: () => 90 },
+  { k: 'spear', name: '창병 징집', desc: '긴 창으로 먼저 찌름. 기병에게 2.5배 피해', max: 1, cost: () => 90 },
   { k: 'archer', name: '궁수 징집', desc: '멀리서 화살을 쏨. 공성에 유용', max: 1, cost: () => 130 },
-  { k: 'knight', name: '기사단 창설', desc: '빠르고 단단한 기병', max: 1, cost: () => 220 },
+  { k: 'knight', name: '기병대 창설', desc: '갑옷 입힌 말을 탄 빠르고 단단한 기병', max: 1, cost: () => 220 },
 ];
 
 const STAGE_NAMES = ['국경 초소', '갈대 평원', '붉은 고개', '늑대 숲', '강철 요새', '잿빛 협곡', '왕의 들판', '마지막 성벽'];
 const GENERAL_NAMES = ['진무', '해루', '사오', '목간', '흑궁', '설한'];
-const PLAYER_FACTION = { name: '고구려', mark: '高' };
-const ENEMY_FACTIONS = [{ name: '백제', mark: '百' }, { name: '신라', mark: '新' }];
-function enemyFaction(s) { return ENEMY_FACTIONS[(s - 1) % 2]; }
-const PAL = [
-  { armor: '#2f5fae', armorD: '#183766', trim: '#d9b25a', plume: '#c8322a', helm: '#9aa3ad', helmD: '#59616b', cloth: '#26303c' },
-  { armor: '#b23a2e', armorD: '#5e1710', trim: '#2b1c14', plume: '#f2e6c8', helm: '#7a756d', helmD: '#45413b', cloth: '#3a2a20' },
-];
+const FACTIONS = {
+  silla:   { name: '신라',   mark: '羅', cloth: '#a8281f', clothD: '#521009', clothL: '#f2907f', trim: '#d4a94a', helm: 'plume' },
+  baekje:  { name: '백제',   mark: '濟', cloth: '#2b5590', clothD: '#11284a', clothL: '#93b6ec', trim: '#cfc6a8', helm: 'tassel' },
+  goguryeo:{ name: '고구려', mark: '麗', cloth: '#2c7058', clothD: '#0f3527', clothL: '#8fdcbc', trim: '#c08f3a', helm: 'feathers' },
+  tang:    { name: '당',     mark: '唐', cloth: '#c39522', clothD: '#56400c', clothL: '#f5d77c', trim: '#2a1a10', helm: 'round' },
+};
+const PLAYER_FACTION = FACTIONS.silla;
+function enemyFaction(s) { return s <= 2 ? FACTIONS.baekje : s <= 4 ? FACTIONS.goguryeo : FACTIONS.tang; }
+let FAC_US = FACTIONS.silla, FAC_THEM = FACTIONS.baekje;
+function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
+function applyFactions(stage) {
+  FAC_US = PLAYER_FACTION; FAC_THEM = enemyFaction(stage);
+  COL.blue = FAC_US.cloth; COL.blueD = FAC_US.clothD; COL.blueL = FAC_US.clothL;
+  COL.red = FAC_THEM.cloth; COL.redD = FAC_THEM.clothD; COL.redL = FAC_THEM.clothL;
+  const r = document.documentElement.style;
+  r.setProperty('--us', FAC_US.cloth); r.setProperty('--us-l', FAC_US.clothL);
+  r.setProperty('--them', FAC_THEM.cloth); r.setProperty('--them-l', FAC_THEM.clothL);
+}
 function stageName(s) { return `${s}장 · ${STAGE_NAMES[s - 1] || '끝없는 전장'}`; }
 
 /* ---------------- Balance ---------------- */
@@ -357,6 +369,7 @@ let groundCanvas = null;
 
 function newBattle(stage) {
   const rng = mulberry32(stage * 7919 + 3);
+  applyFactions(stage);
   const d = DIFF(stage), p = PLAYER();
   G = {
     stage, d, p, t: 0, units: [], structs: [], obst: [], arrows: [], fx: [], decals: [], texts: [], sparks: [],
@@ -489,7 +502,7 @@ function makeHero(x, y) {
 function spawnGeneral() {
   const s = G.stage, m = G.d.eMult;
   const g = {
-    id: G.nid++, team: 1, type: 'general', hero: true, general: true, name: `${enemyFaction(s).name} 장수 ${GENERAL_NAMES[(s - 3) % GENERAL_NAMES.length]}`,
+    id: G.nid++, team: 1, type: 'general', hero: true, general: true, name: `${enemyFaction(s).name} 장수 ${GENERAL_NAMES[(s - 3) % GENERAL_NAMES.length]}`, beard: true,
     x: G.ec.x - 120, y: G.ec.y, vx: 0, vy: 0, r: 14, hp: 420 + 150 * s, maxHp: 420 + 150 * s, atk: 20 * m, reach: 42,
     cd: 0, cdMax: 0.75, spd: 108, face: Math.PI, swing: 0, swingDir: 1, alive: true, retarget: 0, target: null, goal: null,
     hitFlash: 0, rage: 0, stun: 0, retreat: false, aggro: 250, following: false
@@ -504,8 +517,8 @@ function buildGround(rng) {
   const c = groundCanvas || document.createElement('canvas');
   c.width = W; c.height = H; groundCanvas = c;
   const g = c.getContext('2d');
-  g.fillStyle = '#5a7637'; g.fillRect(0, 0, W, H);
-  const greens = ['#55703a', '#62803f', '#6b8845', '#4f6a33', '#718c49', '#5e7a3a'];
+  g.fillStyle = '#5b653a'; g.fillRect(0, 0, W, H);
+  const greens = ['#56603a', '#626b3f', '#6d7046', '#4d5833', '#77744c', '#6a6142'];
   for (let i = 0; i < 1400; i++) {
     g.globalAlpha = 0.25 + rng() * 0.3; g.fillStyle = greens[(rng() * greens.length) | 0];
     g.beginPath(); g.arc(rng() * W, rng() * H, 6 + rng() * 34, 0, TAU); g.fill();
@@ -1257,7 +1270,7 @@ function render(dt) {
   ctx.globalAlpha = 1;
   // follow radius hint
   if (h.alive && !G.attract) {
-    ctx.strokeStyle = 'rgba(143,186,245,.16)'; ctx.setLineDash([6, 10]); ctx.lineWidth = 1.5;
+    ctx.strokeStyle = hexA(COL.blueL, 0.22); ctx.setLineDash([6, 10]); ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(h.x, h.y, G.p.followR, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
   }
   // screen-space overlays
@@ -1299,147 +1312,197 @@ function teamCol(t) { return t === 0 ? COL.blue : t === 1 ? COL.red : COL.neutra
 function teamDark(t) { return t === 0 ? COL.blueD : t === 1 ? COL.redD : '#4c4840'; }
 
 function drawUnit(u) {
-  const P = PAL[u.team];
-  const sc = u.hero ? 1.45 : 1;
+  const F = u.team === 0 ? FAC_US : FAC_THEM;
+  const sc = u.hero ? 1.3 : 1;
   const flip = Math.cos(u.face) < 0 ? -1 : 1;
   const aim = Math.atan2(Math.sin(u.face), Math.abs(Math.cos(u.face))) * 0.7;
   const moving = hyp(u.vx, u.vy) > 8;
-  const ph = moving ? Math.sin((u.walk || 0) * 0.2) : 0;
-  const bob = moving ? Math.abs(ph) * 1.1 : 0;
+  const wk = (u.walk || 0) * 0.16;
+  const ph = moving ? Math.sin(wk) : 0;
+  const y0 = moving ? -Math.abs(Math.cos(wk)) * 0.9 : 0;
   const smax = u.hero ? 0.2 : 0.22;
   const sw = u.swing > 0 ? 1 - u.swing / smax : 0;
   const knight = u.type === 'knight';
+  const bearer = u.type === 'sword' && !u.hero && u.id % 7 === 0;
+  const myHero = u.hero && u.team === 0;
   ctx.save(); ctx.translate(u.x, u.y);
-  // ground marks
-  ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(0, 1, (knight ? 16 : u.r * 1.1) * sc, u.r * 0.45 * sc, 0, 0, TAU); ctx.fill();
-  if (u.following && !u.hero) { ctx.strokeStyle = u.team === 0 ? 'rgba(170,210,255,.6)' : 'rgba(255,170,160,.5)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0, 1, u.r + 4, (u.r + 4) * 0.45, 0, 0, TAU); ctx.stroke(); }
-  if (u.hero) { ctx.strokeStyle = u.team === 0 ? COL.gold : '#120806'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(0, 1, 22, 9, 0, 0, TAU); ctx.stroke(); }
-  if (u.rage > 0) { ctx.strokeStyle = `rgba(226,173,59,${0.55 + Math.sin(G.t * 12) * 0.25})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, 1, u.r * sc + 7, (u.r * sc + 7) * 0.5, 0, 0, TAU); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(0, 1, (knight ? 19 : 8) * sc, 3.6 * sc, 0, 0, TAU); ctx.fill();
+  if (u.following && !u.hero) { ctx.strokeStyle = hexA(F.clothL, 0.65); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.ellipse(0, 1, knight ? 17 : 10, knight ? 6 : 4.2, 0, 0, TAU); ctx.stroke(); }
+  if (u.hero) { ctx.strokeStyle = myHero ? COL.gold : '#120806'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(0, 1, 22, 8.5, 0, 0, TAU); ctx.stroke(); }
+  if (u.rage > 0) { ctx.strokeStyle = `rgba(226,173,59,${0.55 + Math.sin(G.t * 12) * 0.25})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, 1, 14 * sc, 6 * sc, 0, 0, TAU); ctx.stroke(); }
   ctx.scale(flip * sc, sc);
-  let flagPos = null;
-  if (knight) {
-    drawHorse(P, moving ? (u.walk || 0) * 0.25 : 0);
-    ctx.translate(-1, -11);
-  } else {
-    // legs (trousers + boots)
-    ctx.fillStyle = P.cloth;
-    ctx.fillRect(-4 + ph * 2.2, -8, 3.2, 7); ctx.fillRect(0.8 - ph * 2.2, -8, 3.2, 7);
-    ctx.fillStyle = '#1b1510';
-    ctx.fillRect(-4.4 + ph * 2.2, -2, 4, 2.2); ctx.fillRect(0.6 - ph * 2.2, -2, 4, 2.2);
+  let flagText = null;
+  if (knight) { drawHorse(F, moving ? (u.walk || 0) * 0.2 : 0); ctx.translate(-1, -9); }
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const iron = myHero ? '#8f7a45' : u.general ? '#2b2826' : '#4c5055';
+  const ironD = myHero ? '#5a4a22' : u.general ? '#0e0c0b' : '#2c2f33';
+  // cape: commanders and cavalry
+  if (u.hero || knight) {
+    const wv = Math.sin(G.t * 6 + u.id) * 1.4 + (moving ? -3 : 0);
+    ctx.fillStyle = u.general ? '#151210' : F.cloth;
+    ctx.beginPath(); ctx.moveTo(-1.5, -25 + y0); ctx.quadraticCurveTo(-9 + wv, -17 + y0, -11 + wv * 1.6, (knight ? -11 : -2) + y0);
+    ctx.lineTo(-3.5, (knight ? -13 : -4) + y0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.moveTo(-1.5, -25 + y0); ctx.quadraticCurveTo(-6 + wv, -16 + y0, -7 + wv, (knight ? -12 : -3) + y0); ctx.lineTo(-3.5, (knight ? -13 : -4) + y0); ctx.closePath(); ctx.fill();
   }
-  const y0 = -bob;
-  // hero cape + back banner
+  // legs
+  ctx.strokeStyle = '#2a2622'; ctx.lineWidth = 2.8;
+  if (!knight) {
+    for (const sg of [1, -1]) {
+      const kx = Math.sin(ph * 0.5 * sg) * 13;
+      ctx.beginPath(); ctx.moveTo(0, -13 + y0); ctx.lineTo(kx * 0.5 + 0.8, -6.5 + y0 * 0.5); ctx.lineTo(kx, -1); ctx.stroke();
+      ctx.fillStyle = '#141210'; ctx.fillRect(kx - 1.6, -2.2, 4.2, 2.4);
+    }
+  } else { ctx.beginPath(); ctx.moveTo(0, -13); ctx.lineTo(4, -8); ctx.lineTo(2.5, -3); ctx.stroke(); }
+  // commander's back banner (장수기)
   if (u.hero) {
-    const wv = Math.sin(G.t * 7) * 1.5 + (moving ? -2 : 0);
-    ctx.fillStyle = u.team === 0 ? '#a8261d' : '#140a08';
-    ctx.beginPath(); ctx.moveTo(-3, -18 + y0); ctx.quadraticCurveTo(-11 + wv, -10 + y0, -9 + wv, -3 + y0); ctx.lineTo(-2, -5 + y0); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#3a2a18'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-4, -12 + y0); ctx.lineTo(-6, -40 + y0); ctx.stroke();
-    const fw = Math.sin(G.t * 5) * 1.2;
-    ctx.fillStyle = u.team === 0 ? '#f0e4c4' : '#1d1d1d'; ctx.strokeStyle = u.team === 0 ? '#a8261d' : '#b23a2e'; ctx.lineWidth = 0.8;
-    ctx.beginPath(); ctx.moveTo(-6, -40 + y0); ctx.lineTo(-15 + fw, -39 + y0); ctx.lineTo(-15 + fw, -29 + y0); ctx.lineTo(-5.5, -30 + y0); ctx.closePath(); ctx.fill(); ctx.stroke();
-    flagPos = { x: -10.3 + fw / 2, y: -34.5 + y0 };
+    ctx.strokeStyle = '#3a2a18'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-3, -18 + y0); ctx.lineTo(-5, -50 + y0); ctx.stroke();
+    const fw = Math.sin(G.t * 5) * 1.3;
+    ctx.fillStyle = u.general ? '#151210' : F.cloth; ctx.strokeStyle = F.trim; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(-5, -50 + y0); ctx.lineTo(-16 + fw, -49 + y0); ctx.lineTo(-16 + fw, -37 + y0); ctx.lineTo(-4.6, -38 + y0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    flagText = { x: -10.5 + fw / 2, y: -43.5 + y0, size: 8, col: u.general ? F.clothL : '#f3e6c8' };
   }
-  // shield on back arm (swordsmen)
-  if (u.type === 'sword') {
-    ctx.fillStyle = '#7a5530'; ctx.strokeStyle = P.armorD; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.ellipse(-5, -12 + y0, 3.2, 5.6, 0, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = P.trim; ctx.beginPath(); ctx.arc(-5, -12 + y0, 1.2, 0, TAU); ctx.fill();
+  // shield on the far arm
+  if (u.type === 'sword' && !bearer) {
+    ctx.fillStyle = '#3e2c1e'; ctx.strokeStyle = F.cloth; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.ellipse(-4.2, -18.5 + y0, 3.6, 7.2, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = F.trim; ctx.beginPath(); ctx.arc(-4.2, -18.5 + y0, 1.3, 0, TAU); ctx.fill();
   }
-  // torso: lamellar armour (찰갑)
-  ctx.fillStyle = u.hero && u.team === 0 ? '#c59a3c' : P.armor;
-  ctx.strokeStyle = P.armorD; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.roundRect(-5.5, -19 + y0, 11, 13, 2.5); ctx.fill(); ctx.stroke();
-  ctx.strokeStyle = u.hero && u.team === 0 ? '#7a5a1c' : P.armorD; ctx.lineWidth = 0.7;
-  for (let yy = -16; yy <= -9; yy += 2.4) { ctx.beginPath(); ctx.moveTo(-5, yy + y0); ctx.lineTo(5, yy + y0); ctx.stroke(); }
-  for (let xx = -3; xx <= 3; xx += 3) { ctx.beginPath(); ctx.moveTo(xx, -17 + y0); ctx.lineTo(xx, -8 + y0); ctx.stroke(); }
-  ctx.fillStyle = P.trim; ctx.fillRect(-5.5, -10 + y0, 11, 2);
-  // skirt of armour
-  ctx.fillStyle = P.armorD; ctx.beginPath(); ctx.moveTo(-5.5, -8 + y0); ctx.lineTo(5.5, -8 + y0); ctx.lineTo(6.5, -5 + y0); ctx.lineTo(-6.5, -5 + y0); ctx.closePath(); ctx.fill();
+  if (u.type === 'archer') { ctx.fillStyle = '#5a3c22'; ctx.save(); ctx.translate(-4.5, -21 + y0); ctx.rotate(-0.35); ctx.fillRect(-1.5, -6, 3, 11); ctx.fillStyle = '#e9dcbc'; ctx.fillRect(-1.2, -8.5, 0.8, 3); ctx.fillRect(0.4, -9, 0.8, 3); ctx.restore(); }
+  // war skirt: cloth with lamellar bands
+  ctx.fillStyle = F.cloth; ctx.beginPath(); ctx.moveTo(-4.6, -15.5 + y0); ctx.lineTo(4.6, -15.5 + y0); ctx.lineTo(6.2, -6.5 + y0); ctx.lineTo(-6.2, -6.5 + y0); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = iron; ctx.beginPath(); ctx.moveTo(-4.4, -15.5 + y0); ctx.lineTo(4.4, -15.5 + y0); ctx.lineTo(5.2, -10 + y0); ctx.lineTo(-5.2, -10 + y0); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = ironD; ctx.lineWidth = 0.6;
+  ctx.beginPath(); ctx.moveTo(-4.8, -12.8 + y0); ctx.lineTo(4.8, -12.8 + y0); ctx.stroke();
+  // torso: iron lamellar coat (찰갑)
+  ctx.fillStyle = iron; ctx.strokeStyle = ironD; ctx.lineWidth = 0.9;
+  ctx.beginPath(); ctx.roundRect(-4.6, -26.5 + y0, 9.2, 11.5, 2); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = 0.55;
+  for (let yy = -24.5; yy <= -17; yy += 1.9) { ctx.beginPath(); ctx.moveTo(-4, yy + y0); ctx.lineTo(4, yy + y0); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(0,0,0,.3)';
+  for (let xx = -2.4; xx <= 2.5; xx += 2.4) { ctx.beginPath(); ctx.moveTo(xx, -25.5 + y0); ctx.lineTo(xx, -16 + y0); ctx.stroke(); }
+  // sash in faction colour + belt
+  ctx.strokeStyle = F.cloth; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(-3.8, -26 + y0); ctx.lineTo(3.8, -17 + y0); ctx.stroke();
+  ctx.fillStyle = F.trim; ctx.fillRect(-4.8, -16 + y0, 9.6, 1.6);
+  // neck guard scarf
+  ctx.fillStyle = F.cloth; ctx.fillRect(-2.4, -27.8 + y0, 4.8, 1.8);
   // head
-  ctx.fillStyle = '#e6c09a'; ctx.beginPath(); ctx.arc(0.5, -22.5 + y0, 4, 0, TAU); ctx.fill();
-  ctx.fillStyle = '#1b1510'; ctx.fillRect(2.4, -23 + y0, 1.2, 1.2);
-  // helmet (투구): dome, cheek guards, spike, plume
-  ctx.fillStyle = P.helm; ctx.strokeStyle = P.helmD; ctx.lineWidth = 0.8;
-  ctx.beginPath(); ctx.arc(0.5, -23.5 + y0, 4.6, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.fillRect(-4.1, -23.5 + y0, 2.2, 5);
-  ctx.fillStyle = P.helmD; ctx.fillRect(-4.3, -24 + y0, 9.6, 1.3);
-  ctx.strokeStyle = P.helmD; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(0.5, -28 + y0); ctx.lineTo(0.5, -31 + y0); ctx.stroke();
-  if (u.general) {
-    ctx.fillStyle = '#d9cfb8';
-    ctx.beginPath(); ctx.moveTo(-2.5, -26 + y0); ctx.quadraticCurveTo(-7, -29 + y0, -6, -34 + y0); ctx.lineTo(-1.5, -27.5 + y0); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(3.5, -26 + y0); ctx.quadraticCurveTo(8, -29 + y0, 7, -34 + y0); ctx.lineTo(2.5, -27.5 + y0); ctx.fill();
-  } else {
-    const pw = Math.sin(G.t * 6 + u.id) * 0.8 - (moving ? 1.5 : 0);
-    ctx.fillStyle = u.hero ? '#d8261b' : P.plume;
-    ctx.beginPath(); ctx.moveTo(0.5, -31 + y0); ctx.quadraticCurveTo(-3 + pw, -33 + y0, -5 + pw, -28 + y0); ctx.quadraticCurveTo(-2 + pw, -30 + y0, 0.5, -30 + y0); ctx.fill();
-  }
+  ctx.fillStyle = '#d6ad86'; ctx.beginPath(); ctx.arc(0.7, -30 + y0, 3.1, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#141010'; ctx.fillRect(2.4, -30.6 + y0, 1, 1);
+  if (u.hero) { ctx.fillStyle = '#1c1612'; ctx.beginPath(); ctx.moveTo(-0.5, -29 + y0); ctx.quadraticCurveTo(1.5, -24.5 + y0, 3.8, -28.2 + y0); ctx.lineTo(3.4, -29 + y0); ctx.quadraticCurveTo(1.5, -27.5 + y0, -0.5, -29 + y0); ctx.fill(); }
+  drawHelmet(F, u, y0, iron, ironD, myHero);
   // weapon arm
-  const hx = 4.5, hy = -12.5 + y0;
+  const hx = 4.2, hy = -19 + y0;
   ctx.save(); ctx.translate(hx, hy);
-  ctx.lineCap = 'round';
-  if (u.type === 'spear' || knight) {
-    const th = sw > 0 ? Math.sin(sw * Math.PI) * 9 : 0;
-    ctx.rotate(aim * 0.8 - (knight ? 0.05 : 0.1)); ctx.translate(th, 0);
-    const L = knight ? 30 : 24;
-    ctx.strokeStyle = '#6b4a28'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(L, 0); ctx.stroke();
-    ctx.fillStyle = '#dfe3e6'; ctx.beginPath(); ctx.moveTo(L + 6, 0); ctx.lineTo(L - 1, -2.2); ctx.lineTo(L - 1, 2.2); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = u.team === 0 ? '#c8322a' : '#1b1b1b'; ctx.beginPath(); ctx.arc(L - 2, 2.5, 1.8, 0, TAU); ctx.fill();
+  if (bearer) {
+    ctx.strokeStyle = '#4a3420'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-0.5, 6); ctx.lineTo(-1.5, -42); ctx.stroke();
+    const fw = Math.sin(G.t * 4 + u.id) * 2 - (moving ? 2 : 0);
+    ctx.fillStyle = F.cloth; ctx.strokeStyle = F.clothD; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(-1.5, -42); ctx.quadraticCurveTo(-9, -44 + fw * 0.4, -18 + fw, -41); ctx.lineTo(-18 + fw, -27); ctx.quadraticCurveTo(-9, -29 + fw * 0.4, -1.2, -27); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = F.trim; ctx.fillRect(-18 + fw, -27, 16.5, 1.5);
+    flagText = { x: hx - 9.5 + fw / 2, y: hy - 34.5, size: 9, col: '#f3e6c8' };
+  } else if (u.type === 'spear' || knight) {
+    const th = sw > 0 ? Math.sin(sw * Math.PI) * 10 : 0;
+    ctx.rotate(aim * 0.8 - 0.12); ctx.translate(th, 0);
+    const L = knight ? 34 : 27;
+    ctx.strokeStyle = '#5a3d22'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(L, 0); ctx.stroke();
+    ctx.fillStyle = '#d6dadd'; ctx.beginPath(); ctx.moveTo(L + 7, 0); ctx.lineTo(L - 1, -2); ctx.lineTo(L - 1, 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = F.cloth; ctx.beginPath(); ctx.moveTo(L - 2, 0); ctx.quadraticCurveTo(L - 5, 4, L - 8, 4.5); ctx.lineTo(L - 3, 0.5); ctx.fill();
   } else if (u.type === 'archer') {
     ctx.rotate(aim);
-    const pull = sw > 0 ? Math.sin(sw * Math.PI) * 3 : 0;
-    ctx.strokeStyle = '#5a3a1c'; ctx.lineWidth = 1.8;
-    ctx.beginPath(); ctx.moveTo(1, -9); ctx.quadraticCurveTo(6, -6, 4, 0); ctx.quadraticCurveTo(6, 6, 1, 9); ctx.stroke();
-    ctx.strokeStyle = 'rgba(240,230,200,.8)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(1, -9); ctx.lineTo(-pull, 0); ctx.lineTo(1, 9); ctx.stroke();
-    // quiver on back
+    const pull = sw > 0 ? Math.sin(sw * Math.PI) * 3.5 : 0;
+    ctx.strokeStyle = '#4a2e16'; ctx.lineWidth = 1.7;
+    ctx.beginPath(); ctx.moveTo(-1, -11); ctx.quadraticCurveTo(1, -10, 3, -7); ctx.quadraticCurveTo(6, -3, 4, 0); ctx.quadraticCurveTo(6, 3, 3, 7); ctx.quadraticCurveTo(1, 10, -1, 11); ctx.stroke();
+    ctx.strokeStyle = 'rgba(240,230,200,.8)'; ctx.lineWidth = 0.55; ctx.beginPath(); ctx.moveTo(-1, -11); ctx.lineTo(-pull, 0); ctx.lineTo(-1, 11); ctx.stroke();
   } else {
-    // 환두대도: ring-pommel sword
+    // 환두대도 (ring-pommel sword)
     let a;
-    if (u.hero) a = u.swing > 0 ? (u.swingDir || 1) * (1.3 - sw * 2.6) + aim : -0.9 + aim;
-    else a = (sw > 0 ? -1.4 + Math.sin(sw * Math.PI) * 2.2 : -0.9) + aim;
+    if (u.hero) a = u.swing > 0 ? (u.swingDir || 1) * (1.3 - sw * 2.6) + aim : -1.0 + aim;
+    else a = (sw > 0 ? -1.5 + Math.sin(sw * Math.PI) * 2.3 : -1.0) + aim;
     ctx.rotate(a);
-    const L = u.hero ? 17 : 12;
-    ctx.strokeStyle = '#eef1f3'; ctx.lineWidth = u.hero ? 2.4 : 1.8; ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(L, 0); ctx.stroke();
-    ctx.strokeStyle = '#c9a24a'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(1.5, -2.2); ctx.lineTo(1.5, 2.2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(-1.8, 0, 1.6, 0, TAU); ctx.stroke();
+    const L = u.hero ? 19 : 14;
+    ctx.strokeStyle = '#e8ecef'; ctx.lineWidth = u.hero ? 2.3 : 1.7; ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(L, 0); ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(3, 0.6); ctx.lineTo(L - 1, 0.6); ctx.stroke();
+    ctx.strokeStyle = '#c9a24a'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(1.6, -2); ctx.lineTo(1.6, 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-2, 0, 1.6, 0, TAU); ctx.stroke();
   }
   ctx.restore();
-  ctx.fillStyle = '#e6c09a'; ctx.beginPath(); ctx.arc(hx, hy, 1.7, 0, TAU); ctx.fill();
-  if (u.type === 'archer') { ctx.fillStyle = '#6b4a28'; ctx.fillRect(-6.5, -21 + y0, 2.6, 9); ctx.fillStyle = '#efe1bd'; ctx.fillRect(-6.3, -23 + y0, 0.8, 2.5); ctx.fillRect(-5, -23.5 + y0, 0.8, 2.5); }
-  if (u.hitFlash > 0) { ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.ellipse(0, -15 + y0, 7, 13, 0, 0, TAU); ctx.fill(); }
-  if (u.inv > 0 && Math.sin(G.t * 30) > 0) { ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(0, -15 + y0, 7, 13, 0, 0, TAU); ctx.fill(); }
+  // near arm: pauldron + hand
+  ctx.fillStyle = iron; ctx.strokeStyle = ironD; ctx.lineWidth = 0.7;
+  ctx.beginPath(); ctx.ellipse(1.8, -24.5 + y0, 2.8, 2, 0.3, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = iron; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(2, -23.5 + y0); ctx.lineTo(hx, hy); ctx.stroke();
+  ctx.fillStyle = '#d6ad86'; ctx.beginPath(); ctx.arc(hx, hy, 1.5, 0, TAU); ctx.fill();
+  if (u.hitFlash > 0) { ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.ellipse(0, -18 + y0, 7, 15, 0, 0, TAU); ctx.fill(); }
+  if (u.inv > 0 && Math.sin(G.t * 30) > 0) { ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(0, -18 + y0, 7, 15, 0, 0, TAU); ctx.fill(); }
   ctx.restore();
-  if (flagPos) {
-    const mark = u.team === 0 ? PLAYER_FACTION.mark : enemyFaction(G.stage).mark;
-    ctx.font = `700 ${7 * sc}px "Noto Serif KR","Noto Sans KR",serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = u.team === 0 ? '#a8261d' : '#e8d8b8';
-    ctx.fillText(mark, u.x + flagPos.x * flip * sc, u.y + flagPos.y * sc);
+  if (flagText) {
+    ctx.font = `900 ${flagText.size * sc}px "Noto Serif KR","Noto Sans KR",serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = flagText.col;
+    ctx.fillText(F.mark, u.x + flagText.x * flip * sc, u.y + (flagText.y + (knight ? -9 : 0)) * sc);
     ctx.textBaseline = 'alphabetic';
   }
-  const top = u.y - (knight ? 44 : 34) * sc - 4;
+  const top = u.y - (knight ? 50 : u.hero ? 54 : 40) * sc;
   if (u.stun > 0) { ctx.fillStyle = '#ffe9a8'; for (let i = 0; i < 3; i++) { const a = G.t * 6 + i * 2.1; ctx.fillRect(u.x + Math.cos(a) * 8 - 1.5, top + 2 + Math.sin(a) * 3 - 1.5, 3, 3); } }
   if (u.hp < u.maxHp && u !== G.hero) {
     const w = u.hero ? 40 : 18, y = top;
     ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(u.x - w / 2, y, w, u.hero ? 5 : 3);
-    ctx.fillStyle = u.team === 0 ? '#7fd86a' : '#ff6a5a'; ctx.fillRect(u.x - w / 2, y, w * Math.max(0, u.hp / u.maxHp), u.hero ? 5 : 3);
+    ctx.fillStyle = u.team === 0 ? '#9fe08a' : '#ff7a66'; ctx.fillRect(u.x - w / 2, y, w * Math.max(0, u.hp / u.maxHp), u.hero ? 5 : 3);
   }
   if (u.general) { ctx.font = '700 11px "Noto Sans KR",sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#000'; ctx.fillText(u.name, u.x + 1, top - 3); ctx.fillStyle = COL.redL; ctx.fillText(u.name, u.x, top - 4); }
 }
-// 개마무사 armoured horse, drawn facing +x, feet at y=0
-function drawHorse(P, step) {
-  const l = Math.sin(step) * 3, l2 = Math.sin(step + Math.PI) * 3;
-  ctx.strokeStyle = '#3b2616'; ctx.lineWidth = 2; ctx.lineCap = 'round';
-  for (const [x, o] of [[-8, l], [-5, l2], [6, l2], [9, l]]) { ctx.beginPath(); ctx.moveTo(x, -7); ctx.lineTo(x + o, 0); ctx.stroke(); }
-  ctx.strokeStyle = '#2a1a10'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-12, -11); ctx.quadraticCurveTo(-17, -8, -15, -3); ctx.stroke();
-  ctx.fillStyle = '#5c3d22'; ctx.beginPath(); ctx.ellipse(0, -10, 12, 5.5, 0, 0, TAU); ctx.fill();
-  // barding: scale armour over the horse
-  ctx.fillStyle = P.armorD; ctx.beginPath(); ctx.ellipse(0, -10.5, 11, 4.8, 0, 0, TAU); ctx.fill();
-  ctx.fillStyle = P.armor;
-  for (let x = -8; x <= 8; x += 3.2) for (let y = -13; y <= -9; y += 2.6) { ctx.beginPath(); ctx.arc(x + ((y | 0) % 2 ? 1.6 : 0), y, 1.1, 0, Math.PI); ctx.fill(); }
-  // neck + armoured head (마갑 + 마주)
-  ctx.fillStyle = '#5c3d22'; ctx.beginPath(); ctx.moveTo(8, -13); ctx.lineTo(13, -20); ctx.lineTo(16, -18); ctx.lineTo(11, -9); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = P.helm; ctx.strokeStyle = P.helmD; ctx.lineWidth = 0.8;
-  ctx.beginPath(); ctx.moveTo(12, -21); ctx.lineTo(19, -17.5); ctx.lineTo(18, -15); ctx.lineTo(12.5, -16.5); ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = P.plume; ctx.beginPath(); ctx.arc(12.5, -22, 1.4, 0, TAU); ctx.fill();
+// helmets per kingdom, facing +x, head centre at (0.7,-30)
+function drawHelmet(F, u, y0, iron, ironD, myHero) {
+  const helm = myHero ? '#c9a24a' : u.general ? '#1e1b19' : '#6a6e73';
+  const helmD = myHero ? '#6e5420' : u.general ? '#000' : '#34373b';
+  const hy = -30.6 + y0;
+  ctx.fillStyle = helm; ctx.strokeStyle = helmD; ctx.lineWidth = 0.7;
+  if (F.helm === 'round') {
+    ctx.beginPath(); ctx.arc(0.7, hy, 3.8, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillRect(-4, hy, 2.4, 4); ctx.fillRect(-3.5, hy - 0.3, 8.8, 1.2);
+    ctx.fillStyle = '#b8261b'; ctx.beginPath(); ctx.arc(0.7, hy - 4.3, 1.4, 0, TAU); ctx.fill();
+    return;
+  }
+  // 종장판주: tall dome of vertical plates with flaring neck guard
+  ctx.beginPath(); ctx.moveTo(-3, hy + 0.2); ctx.quadraticCurveTo(-3.2, hy - 4.8, 0.7, hy - 5.3); ctx.quadraticCurveTo(4.6, hy - 4.8, 4.4, hy + 0.2); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = helmD; ctx.lineWidth = 0.45;
+  for (const x of [-1.3, 0.7, 2.7]) { ctx.beginPath(); ctx.moveTo(x, hy - 4.5); ctx.lineTo(x * 1.1, hy); ctx.stroke(); }
+  ctx.fillStyle = helm; ctx.beginPath(); ctx.moveTo(-3, hy - 0.4); ctx.lineTo(-5, hy + 4.6); ctx.lineTo(-1.2, hy + 3.6); ctx.lineTo(-0.8, hy); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = helmD; ctx.fillRect(-3.3, hy - 0.4, 8, 1.1);
+  const wv = Math.sin(G.t * 6 + u.id) * 0.8 - (hyp(u.vx, u.vy) > 8 ? 1.5 : 0);
+  if (F.helm === 'plume') {
+    // 상모: spike with long red horsehair
+    ctx.strokeStyle = helmD; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0.7, hy - 5.2); ctx.lineTo(0.7, hy - 8.5); ctx.stroke();
+    ctx.fillStyle = myHero ? '#d8261b' : F.cloth;
+    ctx.beginPath(); ctx.moveTo(0.7, hy - 8.5); ctx.quadraticCurveTo(-4 + wv, hy - 9, -6 + wv * 1.5, hy - 1); ctx.quadraticCurveTo(-3 + wv, hy - 5, 0.7, hy - 7); ctx.fill();
+  } else if (F.helm === 'feathers') {
+    // two tall feathers
+    ctx.strokeStyle = '#ece4cc'; ctx.lineWidth = 1.5;
+    for (const [dx, a] of [[-0.5, -0.35], [1.9, 0.15]]) { ctx.beginPath(); ctx.moveTo(dx, hy - 5); ctx.lineTo(dx + Math.sin(a + wv * 0.05) * 9, hy - 5 - Math.cos(a) * 9); ctx.stroke(); }
+    ctx.fillStyle = F.cloth; ctx.beginPath(); ctx.arc(0.7, hy - 5.2, 1.3, 0, TAU); ctx.fill();
+  } else {
+    // tassel and streaming ribbons
+    ctx.strokeStyle = helmD; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0.7, hy - 5.2); ctx.lineTo(0.7, hy - 7.5); ctx.stroke();
+    ctx.fillStyle = F.cloth; ctx.beginPath(); ctx.arc(0.7, hy - 8.3, 1.6, 0, TAU); ctx.fill();
+    ctx.strokeStyle = F.cloth; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-3, hy + 0.5); ctx.quadraticCurveTo(-6 + wv, hy + 2, -7 + wv * 1.4, hy + 5); ctx.stroke();
+  }
+}
+// 개마무사 armoured horse, facing +x, hooves at y=0
+function drawHorse(F, step) {
+  const l = Math.sin(step) * 3.2, l2 = Math.sin(step + Math.PI) * 3.2;
+  ctx.strokeStyle = '#2e1e12'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+  for (const [x, o] of [[-11, l], [-7, l2], [8, l2], [12, l]]) { ctx.beginPath(); ctx.moveTo(x, -11); ctx.lineTo(x + o * 0.6, -5); ctx.lineTo(x + o, 0); ctx.stroke(); }
+  ctx.strokeStyle = '#1e140c'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(-15, -17); ctx.quadraticCurveTo(-21, -13, -19, -5); ctx.stroke();
+  ctx.fillStyle = '#4a3220'; ctx.beginPath(); ctx.ellipse(0, -15, 15, 6.5, 0, 0, TAU); ctx.fill();
+  // barding: iron lamellar with faction fringe
+  ctx.fillStyle = F.clothD; ctx.beginPath(); ctx.moveTo(-14, -14); ctx.lineTo(14, -14); ctx.lineTo(13, -9.5); ctx.lineTo(-13, -9.5); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#4c5055'; ctx.beginPath(); ctx.ellipse(0, -16, 14, 5.6, 0, Math.PI, TAU); ctx.lineTo(14, -12); ctx.lineTo(-14, -12); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 0.6;
+  for (let y = -19; y <= -13; y += 2) { ctx.beginPath(); ctx.moveTo(-13, y); ctx.lineTo(13, y); ctx.stroke(); }
+  // neck and head with chamfron (마주)
+  ctx.fillStyle = '#4a3220'; ctx.beginPath(); ctx.moveTo(10, -19); ctx.lineTo(16, -29); ctx.lineTo(20, -27); ctx.lineTo(15, -13); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#4c5055'; ctx.beginPath(); ctx.moveTo(10, -19); ctx.lineTo(15.5, -28); ctx.lineTo(17.5, -27); ctx.lineTo(13, -17); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#6a6e73'; ctx.strokeStyle = '#34373b'; ctx.lineWidth = 0.7;
+  ctx.beginPath(); ctx.moveTo(15, -30); ctx.lineTo(24, -25.5); ctx.lineTo(23, -22.5); ctx.lineTo(16, -24.5); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = F.cloth; ctx.beginPath(); ctx.arc(15.5, -31, 1.6, 0, TAU); ctx.fill();
 }
 
 function drawRock(o) {
@@ -1460,7 +1523,7 @@ function drawTree(o) {
 }
 function hpBar(x, y, w, frac, team) {
   ctx.fillStyle = 'rgba(0,0,0,.65)'; ctx.fillRect(x - w / 2 - 1, y - 1, w + 2, 8);
-  ctx.fillStyle = team === 0 ? '#5b95ea' : '#e2584b'; ctx.fillRect(x - w / 2, y, w * Math.max(0, frac), 6);
+  ctx.fillStyle = team === 0 ? COL.blueL : COL.redL; ctx.fillRect(x - w / 2, y, w * Math.max(0, frac), 6);
 }
 function drawCastle(s) {
   const x = s.x, y = s.y, w = 64;
@@ -1527,9 +1590,9 @@ function drawTower(s) {
   hpBar(s.x, s.y - 66, 56, s.hp / s.maxHp, s.team);
 }
 function drawOutpostZone(s) {
-  ctx.fillStyle = s.team === 0 ? 'rgba(61,123,217,.10)' : s.team === 1 ? 'rgba(207,63,53,.10)' : 'rgba(240,230,200,.06)';
+  ctx.fillStyle = s.team === 0 ? hexA(COL.blue, 0.12) : s.team === 1 ? hexA(COL.red, 0.12) : 'rgba(240,230,200,.06)';
   ctx.beginPath(); ctx.arc(s.x, s.y, s.capR, 0, TAU); ctx.fill();
-  ctx.strokeStyle = s.team === 0 ? 'rgba(143,186,245,.4)' : s.team === 1 ? 'rgba(243,154,144,.4)' : 'rgba(240,230,200,.25)';
+  ctx.strokeStyle = s.team === 0 ? hexA(COL.blueL, 0.45) : s.team === 1 ? hexA(COL.redL, 0.45) : 'rgba(240,230,200,.25)';
   ctx.setLineDash([8, 8]); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(s.x, s.y, s.capR, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
   ctx.fillStyle = '#9b8f73'; ctx.beginPath(); ctx.arc(s.x, s.y, 26, 0, TAU); ctx.fill();
   ctx.strokeStyle = '#6d6350'; ctx.lineWidth = 2; ctx.stroke();
@@ -1586,7 +1649,7 @@ function renderMinimap() {
   }
   for (const u of G.units) {
     if (!u.alive || u.hero) continue;
-    mctx.fillStyle = u.team === 0 ? (u.following ? '#cfe3ff' : '#6aa2f0') : '#ff6d60';
+    mctx.fillStyle = u.team === 0 ? (u.following ? '#fff2d6' : COL.blueL) : COL.redL;
     mctx.fillRect(u.x * s - DPR, u.y * sy - DPR, 2 * DPR, 2 * DPR);
   }
   if (G.general && G.general.alive) { mctx.fillStyle = '#000'; mctx.beginPath(); mctx.arc(G.general.x * s, G.general.y * sy, 4.5 * DPR, 0, TAU); mctx.fill(); mctx.fillStyle = COL.red; mctx.beginPath(); mctx.arc(G.general.x * s, G.general.y * sy, 3 * DPR, 0, TAU); mctx.fill(); }
