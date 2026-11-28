@@ -195,6 +195,7 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
       <button class="btn alt" id="btnShopT">정비하기</button>
       <button class="btn ghost" id="btnReset">처음부터 다시</button>
       <button class="btn ghost" id="btnSound">소리: 켬</button>
+      <button class="btn ghost size-btn">인물 크기: 보통</button>
     </div>
     <div class="hint" id="titleHint"></div>
   </div>
@@ -226,7 +227,7 @@ body.touch #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 200px)}
     <div class="seal">휴전</div>
     <h2>일시정지</h2>
     <div class="controls" id="ctrlList2"></div>
-    <div class="btns"><button class="btn" id="btnResume">계속 싸우기</button><button class="btn alt" id="btnRetreat">후퇴 (이번 장 포기)</button></div>
+    <div class="btns"><button class="btn" id="btnResume">계속 싸우기</button><button class="btn alt" id="btnRetreat">후퇴 (이번 장 포기)</button><button class="btn ghost size-btn">인물 크기: 보통</button></div>
   </div>
 </div>
 
@@ -253,7 +254,7 @@ const COL = {
 
 /* ---------------- Save ---------------- */
 const SAVE_KEY = 'cheolgi-siege-v1';
-function defaultSave() { return { stage: 1, gold: 0, best: 1, sound: true, up: { hp: 0, atk: 0, horse: 0, medic: 0, command: 0, barracks: 0, drill: 0, spear: 0, archer: 0, knight: 0 } }; }
+function defaultSave() { return { stage: 1, gold: 0, best: 1, sound: true, size: 1, up: { hp: 0, atk: 0, horse: 0, medic: 0, command: 0, barracks: 0, drill: 0, spear: 0, archer: 0, knight: 0 } }; }
 let save = defaultSave();
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY));
@@ -1225,13 +1226,15 @@ function endBattle(res) {
 
 /* ---------------- Rendering ---------------- */
 let DPR = 1, VW = 0, VH = 0, zoom = 1;
+const SIZES = [{ k: 0.75, name: '작게' }, { k: 1, name: '보통' }, { k: 1.3, name: '크게' }];
 function resize() {
   DPR = Math.min(2, window.devicePixelRatio || 1);
   VW = innerWidth; VH = innerHeight;
   cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR);
   cv.style.width = VW + 'px'; cv.style.height = VH + 'px';
   SPR.clear();
-  zoom = Math.min(VW, VH) < 520 ? 0.92 : Math.min(VW, VH) < 800 ? 1.05 : 1.2;
+  const base = Math.min(VW, VH) < 520 ? 0.68 : Math.min(VW, VH) < 800 ? 0.85 : 1.1;
+  zoom = base * SIZES[save.size ?? 1].k;
 }
 addEventListener('resize', resize); resize();
 function screenToWorld(sx, sy) { return { x: (sx - VW / 2) / zoom + G.cam.x, y: (sy - VH / 2) / zoom + G.cam.y }; }
@@ -1926,6 +1929,9 @@ $('#btnResNext').addEventListener('click', openShop);
 $('#btnPause').addEventListener('click', () => { if (state === 'play') pause(); });
 $('#btnResume').addEventListener('click', resume);
 $('#btnRetreat').addEventListener('click', () => { if (!G) return; G.over = true; G.result = 'lose'; G.reward = Math.floor(G.gold * 0.5); save.gold += G.reward; persist(); showResult(); });
+function sizeLabel() { document.querySelectorAll('.size-btn').forEach(b => b.textContent = `인물 크기: ${SIZES[save.size ?? 1].name}`); }
+document.querySelectorAll('.size-btn').forEach(b => b.addEventListener('click', () => { save.size = ((save.size ?? 1) + 2) % 3; persist(); resize(); sizeLabel(); }));
+sizeLabel();
 $('#btnSound').addEventListener('click', () => { save.sound = !save.sound; persist(); $('#btnSound').textContent = `소리: ${save.sound ? '켬' : '끔'}`; });
 let resetConfirm = false;
 $('#btnReset').addEventListener('click', () => {
